@@ -1,4 +1,4 @@
-import type { Owner, PhaseId, PortalHandoff, Role, TaskKind } from './types'
+import type { Choice, Owner, PhaseId, PortalHandoff, Role, TaskKind } from './types'
 
 /**
  * Role-based onboarding templates. In a real product Sarah (HR) would edit these.
@@ -17,6 +17,8 @@ export interface TaskTemplate {
   dueOffset: number
   unblocks?: string
   steps?: string[]
+  /** Request tasks: what she can ask for (e.g. dev tools). */
+  choices?: Choice[]
   approval?: { resource: string }
   handoff?: { key: string; title: string; owner: Owner; readyAfterDays: number }
 }
@@ -26,12 +28,12 @@ export interface StopTemplate {
   tasks: TaskTemplate[]
 }
 
-/** One line of the first-day itinerary shown in "Coming up" before day 1. */
-export interface AgendaItem {
-  time: string
-  text: string
-  /** Set when someone else does it (e.g. IT gets accounts ready). */
-  owner?: Owner
+/** The first-day welcome note shown in "Coming up" before day 1 (reads like an HR email). */
+export interface FirstDayGuide {
+  intro: string
+  sections: { title: string; body: string }[]
+  signoff: string
+  from: string
 }
 
 export interface PhaseTemplate {
@@ -40,8 +42,8 @@ export interface PhaseTemplate {
   /** Day (offset from start) the phase becomes visible. */
   opensOn: number
   stops: [StopTemplate, StopTemplate, StopTemplate]
-  /** Day 1 only: the timed itinerary and a small footnote. */
-  agenda?: { items: AgendaItem[]; footnote?: string }
+  /** Day 1 only: the welcome note previewed on the all-set screen. */
+  guide?: FirstDayGuide
 }
 
 export interface WaitingTemplate {
@@ -146,7 +148,7 @@ const day1 = {
     title: 'Have lunch with your onboarding buddy',
     short: 'Lunch with your buddy',
     why: 'Your go-to person for every small question.',
-    minutes: 45,
+    minutes: 30,
     dueOffset: 0,
   },
 } satisfies Record<string, TaskTemplate>
@@ -157,7 +159,7 @@ const checkIn30: TaskTemplate = {
   short: '30-day check-in',
   why: 'A chance to look back and plan ahead together.',
   minutes: 30,
-  dueOffset: 30,
+  dueOffset: 29,
 }
 
 const feedback: TaskTemplate = {
@@ -166,11 +168,39 @@ const feedback: TaskTemplate = {
   short: 'Share feedback',
   why: 'Helps the next person start even smoother.',
   minutes: 5,
-  dueOffset: 30,
+  dueOffset: 29,
 }
 
-const ARRIVE = { time: '9:15', text: 'Arrive at 240 Fern Street, 4th floor' }
-const PARKING = 'Free visitor parking on Alder Lane.'
+/**
+ * The first-day note, written the way Sarah in HR would write it. Small differences per
+ * role come in through the buddy line, so each template reads like its own email.
+ */
+function firstDayGuide(buddy: string, buddyPlan: string): FirstDayGuide {
+  return {
+    intro:
+      'Here’s everything you need for {day}. It’s a gentle first day, mostly getting set up and meeting people, so there’s nothing else to prepare.',
+    sections: [
+      {
+        title: 'Arriving',
+        body: 'Come to 240 Fern Street and take the elevator to the 4th floor. Aim for about 9:15 so you have a few minutes to settle in. {manager} will meet you at the front desk at 9:30.',
+      },
+      {
+        title: 'Parking and your badge',
+        body: 'Parking on Alder Lane is free for visitors, and you’re a visitor until your badge is ready. The front desk will have your badge and laptop waiting. Please bring a photo ID so they can hand them over.',
+      },
+      {
+        title: 'What to wear',
+        body: 'Whatever you’re comfortable in. Most of the team wears jeans and sneakers. The 4th floor runs a little cold, so a sweater is a good idea.',
+      },
+      {
+        title: 'Who to ask',
+        body: `${buddy} is your onboarding buddy and ${buddyPlan}. Questions about pay, benefits or anything HR, send them my way. For laptop or login trouble, post in #it-help and someone will jump in.`,
+      },
+    ],
+    signoff: 'We’re so glad you’re joining us. See you {day}!',
+    from: 'Sarah, People team',
+  }
+}
 
 // Engineering (full) -----------------------------------------------------------
 
@@ -183,21 +213,26 @@ const engineering: RoleTemplate = {
       label: 'Before day 1',
       opensOn: -Infinity,
       stops: [
-        { name: 'Quick start', tasks: [confirmDetails] },
+        { name: 'Your details', tasks: [confirmDetails] },
         { name: 'Paperwork', tasks: [i9w4] },
         {
-          name: 'Get connected',
+          name: 'Connect with your team',
           tasks: [
             slackInvite('engineering'),
             {
-              key: 'code-access',
+              key: 'dev-tools',
               kind: 'request',
-              title: 'Get access to your team’s code',
-              short: 'Code access',
-              why: '{manager} approves it, so you can push code on day one.',
-              minutes: 3,
+              title: 'Request your dev tools',
+              short: 'Dev tools',
+              why: '{manager} approves it, so everything works on day one.',
+              minutes: 5,
               dueOffset: -1,
-              approval: { resource: 'Code access' },
+              choices: [
+                { value: 'github', label: 'GitHub', hint: 'Code and pull requests' },
+                { value: 'jira', label: 'Jira', hint: 'Your team’s board' },
+                { value: 'cloud', label: 'Cloud console', hint: 'Staging and logs' },
+              ],
+              approval: { resource: 'Dev tools' },
             },
           ],
         },
@@ -213,17 +248,7 @@ const engineering: RoleTemplate = {
         { name: 'Get set up', tasks: [day1.security] },
         { name: 'Meet people', tasks: [day1.buddy] },
       ],
-      agenda: {
-        items: [
-          ARRIVE,
-          { time: '9:30', text: 'Meet {manager} at the front desk' },
-          { time: '10:00', text: 'Pick up your badge and laptop (bring ID)' },
-          { time: '10:30', text: 'Your BrightPath accounts are ready', owner: 'IT' },
-          { time: '11:00', text: 'Security training, 20 min' },
-          { time: '12:30', text: 'Lunch with your onboarding buddy' },
-        ],
-        footnote: PARKING,
-      },
+      guide: firstDayGuide('Sam Rivera', 'is taking you to lunch at 12:30'),
     },
     {
       id: 'week1',
@@ -238,7 +263,7 @@ const engineering: RoleTemplate = {
               title: 'Set up your dev environment',
               short: 'Dev environment',
               why: 'The setup script does most of the work.',
-              minutes: 45,
+              minutes: 30,
               dueOffset: 1,
             },
             {
@@ -301,8 +326,8 @@ const engineering: RoleTemplate = {
               title: 'Ship your first small pull request',
               short: 'First PR',
               why: 'Small is perfect. Your buddy can help pick one.',
-              minutes: 60,
-              dueOffset: 14,
+              minutes: 30,
+              dueOffset: 13,
             },
           ],
         },
@@ -323,21 +348,25 @@ const design: RoleTemplate = {
       label: 'Before day 1',
       opensOn: -Infinity,
       stops: [
-        { name: 'Quick start', tasks: [confirmDetails] },
+        { name: 'Your details', tasks: [confirmDetails] },
         { name: 'Paperwork', tasks: [i9w4] },
         {
-          name: 'Get connected',
+          name: 'Connect with your team',
           tasks: [
             slackInvite('design'),
             {
-              key: 'figma-access',
+              key: 'design-tools',
               kind: 'request',
-              title: 'Get a Figma seat',
-              short: 'Figma seat',
-              why: '{manager} approves it, so it’s ready on day 1.',
-              minutes: 2,
+              title: 'Request your design tools',
+              short: 'Design tools',
+              why: '{manager} approves it, so everything works on day one.',
+              minutes: 5,
               dueOffset: -1,
-              approval: { resource: 'Figma access' },
+              choices: [
+                { value: 'figma', label: 'Figma', hint: 'Design files and libraries' },
+                { value: 'jira', label: 'Jira', hint: 'Your team’s board' },
+              ],
+              approval: { resource: 'Design tools' },
             },
           ],
         },
@@ -358,23 +387,13 @@ const design: RoleTemplate = {
               title: 'Lunch with the design team',
               short: 'Design team lunch',
               why: 'Meet the people you’ll critique and create with.',
-              minutes: 60,
+              minutes: 30,
               dueOffset: 0,
             },
           ],
         },
       ],
-      agenda: {
-        items: [
-          ARRIVE,
-          { time: '9:30', text: 'Meet {manager} at the front desk' },
-          { time: '10:00', text: 'Pick up your badge and laptop (bring ID)' },
-          { time: '10:30', text: 'Your Figma and BrightPath accounts are ready', owner: 'IT' },
-          { time: '11:00', text: 'Security training, 20 min' },
-          { time: '12:30', text: 'Lunch with the design team' },
-        ],
-        footnote: PARKING,
-      },
+      guide: firstDayGuide('Alex Kim', 'will join you and the design team for lunch at 12:30'),
     },
     {
       id: 'week1',
@@ -415,7 +434,7 @@ const design: RoleTemplate = {
               title: 'Watch two patient interviews',
               short: 'Patient interviews',
               why: 'The fastest way to understand who we design for.',
-              minutes: 40,
+              minutes: 30,
               dueOffset: 4,
             },
           ],
@@ -437,7 +456,7 @@ const design: RoleTemplate = {
               short: 'First critique',
               why: 'Early and rough is exactly right.',
               minutes: 30,
-              dueOffset: 14,
+              dueOffset: 13,
             },
           ],
         },

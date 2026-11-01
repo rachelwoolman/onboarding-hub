@@ -22,6 +22,8 @@ export interface Hire {
   previousStartDate?: ISODate
   managerName: string
   remindedAt?: string
+  /** Contact details HR already has; the hire confirms them rather than re-typing. */
+  onFile?: { firstName: string; lastName: string; phone: string; email: string }
 }
 
 /**
@@ -42,6 +44,13 @@ export interface PortalHandoff {
 
 /** Values a task saved when it was completed (or edited). Always fake demo data. */
 export type TaskData = Record<string, string | string[] | number | boolean>
+
+/** One option on a request task (e.g. a tool to ask for). */
+export interface Choice {
+  value: string
+  label: string
+  hint?: string
+}
 
 export interface Task {
   id: string
@@ -65,6 +74,8 @@ export interface Task {
   unblocks?: string
   steps?: string[]
   stepsDone?: number[]
+  /** Request tasks: what she can ask for. */
+  choices?: Choice[]
   /** Completing this creates an AccessRequest for the manager. */
   approval?: { resource: string }
   /** Handoff tasks: what the secure portal form is and what to have ready. */

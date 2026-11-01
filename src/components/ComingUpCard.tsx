@@ -1,15 +1,15 @@
 import { useRef, useState, type KeyboardEvent } from 'react'
 import { fill, type CopyContext } from '../data/copy'
-import type { ComingUp } from '../data/selectors'
+import { dueDay, type ComingUp } from '../data/selectors'
 import type { Task } from '../data/types'
-import { Chip, ClockIcon } from './ui'
+import { ClockIcon } from './ui'
 import { useToast } from './useToast'
 
 type Tab = 'monday' | 'week1' | 'month1'
 
 /**
- * "Coming up" on the all-set screen: Monday's itinerary, Week 1 and the first month,
- * all read-only. Nothing here can be checked off; it opens when she gets there.
+ * "Coming up" on the all-set screen: the first-day note, Week 1 and the first month,
+ * all read-only. Nothing here can be checked off yet.
  * Content comes from the role template and her generated plan, not this component.
  */
 export function ComingUpCard({ data, copy }: { data: ComingUp; copy: CopyContext }) {
@@ -68,20 +68,23 @@ export function ComingUpCard({ data, copy }: { data: ComingUp; copy: CopyContext
 
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="mt-4" key={tab}>
         {tab === 'monday' ? (
-          <div className="animate-fade-up">
-            <ol className="divide-y divide-line/70">
-              {data.monday.items.map((item) => (
-                <li key={item.time} className="flex items-baseline gap-4 py-2.5 text-[15px]">
-                  <span className="w-12 shrink-0 text-right text-[13px] font-medium tabular-nums text-ink-muted">
-                    {item.time}
-                  </span>
-                  <span className="flex-1 text-ink-soft">{fill(item.text, copy)}</span>
-                  {item.owner && <Chip tone="mist">{item.owner}</Chip>}
-                </li>
-              ))}
-            </ol>
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-              {data.monday.footnote && <p className="text-[13px] text-ink-muted">{data.monday.footnote}</p>}
+          <article className="animate-fade-up text-left">
+            {data.guide ? (
+              <>
+                <p className="text-[15px] leading-relaxed text-ink-soft">{fill(data.guide.intro, copy)}</p>
+                {data.guide.sections.map((sec) => (
+                  <section key={sec.title} className="mt-4">
+                    <h3 className="font-serif text-[17px] font-semibold text-ink">{sec.title}</h3>
+                    <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">{fill(sec.body, copy)}</p>
+                  </section>
+                ))}
+                <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">{fill(data.guide.signoff, copy)}</p>
+                <p className="mt-1 text-[14px] text-ink-muted">{data.guide.from}</p>
+              </>
+            ) : (
+              <p className="text-[15px] text-ink-muted">Your first-day note is on its way.</p>
+            )}
+            <div className="mt-5 flex justify-end">
               <button
                 type="button"
                 onClick={() => toast.show(`Mock only: in production this adds ${copy.day} 9:15 to your calendar.`)}
@@ -94,9 +97,9 @@ export function ComingUpCard({ data, copy }: { data: ComingUp; copy: CopyContext
                 Add to calendar
               </button>
             </div>
-          </div>
+          </article>
         ) : (
-          <TaskPreview tasks={tab === 'week1' ? data.week1 : data.month1} copy={copy} showMinutes={tab === 'week1'} />
+          <TaskPreview tasks={tab === 'week1' ? data.week1 : data.month1} copy={copy} meta={tab === 'week1' ? 'minutes' : 'due'} />
         )}
       </div>
       {toast.node}
@@ -104,24 +107,26 @@ export function ComingUpCard({ data, copy }: { data: ComingUp; copy: CopyContext
   )
 }
 
-function TaskPreview({ tasks, copy, showMinutes }: { tasks: Task[]; copy: CopyContext; showMinutes: boolean }) {
+/** Read-only list. Week 1 shows time estimates; the first month shows "by day N". */
+function TaskPreview({ tasks, copy, meta }: { tasks: Task[]; copy: CopyContext; meta: 'minutes' | 'due' }) {
   return (
-    <div className="animate-fade-up">
-      <p className="mb-1 text-[12px] text-ink-muted">Opens when you get there</p>
-      <ul className="divide-y divide-line/70">
-        {tasks.map((t) => (
-          <li key={t.id} className="flex items-center gap-3 py-2.5 text-[15px]">
-            <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-sage-deep" />
-            <span className="flex-1 text-ink-soft">{fill(t.title, copy)}</span>
-            {showMinutes && (
-              <span className="inline-flex shrink-0 items-center gap-1 text-[12px] text-ink-muted">
+    <ul className="animate-fade-up divide-y divide-line/70">
+      {tasks.map((t) => (
+        <li key={t.id} className="flex items-center gap-3 py-2.5 text-[15px]">
+          <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-sage-deep" />
+          <span className="flex-1 text-ink-soft">{fill(t.title, copy)}</span>
+          <span className="inline-flex shrink-0 items-center gap-1 text-[12px] text-ink-muted">
+            {meta === 'minutes' ? (
+              <>
                 <ClockIcon className="size-3" />
                 {t.minutes} min
-              </span>
+              </>
+            ) : (
+              <>by day {dueDay(t)}</>
             )}
-          </li>
-        ))}
-      </ul>
-    </div>
+          </span>
+        </li>
+      ))}
+    </ul>
   )
 }
