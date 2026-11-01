@@ -1,14 +1,13 @@
 import type { StopSummary } from '../data/selectors'
-import { CheckIcon, LeafIcon } from './ui'
+import { CheckIcon } from './ui'
 
 /**
- * Three stops joined by a line. The line fills green (with a couple of small
- * leaves, like a vine) up to the current stop.
+ * Three stops joined by a line that fills green up to the current stop.
  */
 export function JourneyPath({ stops }: { stops: StopSummary[] }) {
   if (stops.length === 0) return null
   const currentIndex = stops.findIndex((s) => s.current)
-  // How far the green vine reaches: up to the current stop, or the end if all done.
+  // How far the green line reaches: up to the current stop, or the end if all done.
   const reach = currentIndex === -1 ? stops.length - 1 : currentIndex
   const segments = stops.length - 1
   const fill = segments ? reach / segments : 0
@@ -21,17 +20,6 @@ export function JourneyPath({ stops }: { stops: StopSummary[] }) {
           className="h-[2px] -translate-y-[0.5px] rounded-full bg-leaf/70 transition-[width] duration-700 ease-(--ease-soft)"
           style={{ width: `${fill * 100}%` }}
         />
-        {Array.from({ length: segments }, (_, i) => (
-          <LeafIcon
-            key={i}
-            className="absolute -top-[11px] size-2.5 text-leaf-bright transition-all duration-700"
-            style={{
-              left: `${((i + 0.5) / segments) * 100}%`,
-              opacity: i < reach ? 0.9 : 0,
-              transform: `translateX(-50%) rotate(${i % 2 ? 200 : -20}deg) scale(${i < reach ? 1 : 0.4})`,
-            }}
-          />
-        ))}
       </div>
 
       <ol className="relative grid grid-cols-3">

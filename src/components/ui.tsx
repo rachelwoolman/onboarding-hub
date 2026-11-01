@@ -43,18 +43,6 @@ export function LeafIcon(props: IconProps) {
   )
 }
 
-export function SproutMark({ className = '' }: { className?: string }) {
-  return (
-    <span className={`inline-flex size-8 items-center justify-center rounded-[10px] bg-leaf text-paper ${className}`}>
-      <svg viewBox="0 0 20 20" className="size-4.5" fill="none" aria-hidden="true">
-        <path d="M10 18V9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        <path d="M10 10C10 6 7.5 4 4 4c0 3.5 2.5 6 6 6z" fill="currentColor" />
-        <path d="M10 8.5C10 5 12.5 2.5 16 2.5c0 3.5-2.5 6-6 6z" fill="currentColor" />
-      </svg>
-    </span>
-  )
-}
-
 /** The one chip style used everywhere. */
 export function Chip({
   children,

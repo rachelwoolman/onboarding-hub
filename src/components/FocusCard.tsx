@@ -18,8 +18,6 @@ interface FocusCardProps {
   task: Task
   mode?: 'focus' | 'edit'
   stopName: string
-  remainingInStop: number
-  totalInStop: number
   overdue: string | null
   managerName: string
   startDay?: string
@@ -38,8 +36,6 @@ export function FocusCard({
   task,
   mode = 'focus',
   stopName,
-  remainingInStop,
-  totalInStop,
   overdue,
   managerName,
   startDay = 'Monday',
@@ -108,7 +104,7 @@ export function FocusCard({
 
   const savedLabel = task.kind === 'request' && !editing ? `Sent to ${managerName}` : 'Saved'
 
-  const footer = ({ label, disabled, disabledHint, secondary, demoHint }: FooterOpts) => (
+  const footer = ({ label, disabled, disabledHint, secondary }: FooterOpts) => (
     <div className="mt-8 flex flex-col items-center gap-3">
       {phase === 'saved' || phase === 'leaving' ? (
         <div className="flex min-h-12 flex-col items-center justify-center gap-1" role="status">
@@ -139,14 +135,8 @@ export function FocusCard({
           Cancel
         </button>
       ) : (
-        <>
-          {phase === 'idle' && secondary}
-          <p className="text-xs text-ink-muted">
-            {remainingInStop} of {totalInStop} left in this stop
-          </p>
-        </>
+        phase === 'idle' && secondary
       )}
-      {demoHint && <p className="text-[11px] tracking-wide text-ink-muted/80">Demo: use fake info</p>}
     </div>
   )
 

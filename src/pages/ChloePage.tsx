@@ -164,8 +164,6 @@ export function ChloePage() {
         task={editing}
         mode="edit"
         stopName={phaseTemplate(hire.role, editing.phase).stops[editing.stop]?.name ?? ''}
-        remainingInStop={0}
-        totalInStop={0}
         overdue={null}
         managerName={hire.managerName}
         startDay={startDay}
@@ -257,8 +255,6 @@ export function ChloePage() {
                 key={focus.id}
                 task={focus}
                 stopName={currentStop.name}
-                remainingInStop={currentStop.remaining}
-                totalInStop={currentStop.total}
                 overdue={overdueLabel(hire, focus, state.today)}
                 managerName={hire.managerName}
                 startDay={startDay}

@@ -12,7 +12,6 @@ export interface FooterOpts {
   /** Shown under a disabled button, saying what unlocks it. */
   disabledHint?: string
   secondary?: ReactNode
-  demoHint?: boolean
 }
 
 export interface BodyProps {
@@ -97,7 +96,7 @@ export function ContactBody({ task, idPrefix, draftKey, submit, footer, mode }: 
         <TextField label="Mobile phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="(555) 010-1234" {...bind('phone')} />
         <TextField label="Personal email" type="email" inputMode="email" autoComplete="email" placeholder="chloe@example.com" {...bind('email')} />
       </div>
-      {footer({ label: mode === 'edit' ? 'Save changes' : 'Confirm', demoHint: true })}
+      {footer({ label: mode === 'edit' ? 'Save changes' : 'Confirm' })}
     </form>
   )
 }
@@ -191,7 +190,7 @@ export function RequestBody({ task, idPrefix, draftKey, submit, footer, mode, ma
           error={f.error('githubUsername')}
         />
       )}
-      {footer({ label: mode === 'edit' ? 'Update request' : `Send to ${managerName}`, demoHint: needsGithub })}
+      {footer({ label: mode === 'edit' ? 'Update request' : `Send to ${managerName}` })}
     </form>
   )
 }
