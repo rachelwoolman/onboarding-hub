@@ -27,9 +27,18 @@ export interface Hire {
 /**
  * How a task is done in place:
  * form (fill and submit), steps (check every step), read (scroll to the end),
- * request (ask someone for access). Undefined means a plain "Mark done".
+ * request (ask someone for access), handoff (finish it in a secure external
+ * portal, then confirm). Undefined means a plain "Mark done".
  */
-export type TaskKind = 'form' | 'steps' | 'read' | 'request'
+export type TaskKind = 'form' | 'steps' | 'read' | 'request' | 'handoff'
+
+/** A task finished in a secure provider (HR portal), never inside this app. */
+export interface PortalHandoff {
+  /** Name of the form in the portal, e.g. "Form I-9 and W-4". */
+  formName: string
+  /** What to have on hand before opening it. */
+  haveReady: string[]
+}
 
 /** Values a task saved when it was completed (or edited). Always fake demo data. */
 export type TaskData = Record<string, string | string[] | number | boolean>
@@ -58,6 +67,8 @@ export interface Task {
   stepsDone?: number[]
   /** Completing this creates an AccessRequest for the manager. */
   approval?: { resource: string }
+  /** Handoff tasks: what the secure portal form is and what to have ready. */
+  portal?: PortalHandoff
   /** Completing this creates a waiting item owned by someone else. */
   handoff?: { key: string; title: string; owner: Owner; readyAfterDays: number }
   doneAt?: string

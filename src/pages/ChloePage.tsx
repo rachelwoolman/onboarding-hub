@@ -15,7 +15,7 @@ import {
   plantStage,
   waitingFor,
 } from '../data/selectors'
-import { clearDraft } from '../data/drafts'
+import { clearDraft, EDITING_KEY } from '../data/drafts'
 import { phaseTemplate } from '../data/templates'
 import type { Hire, PhaseId, PlantStage, TaskData } from '../data/types'
 import { useStore } from '../state/store'
@@ -24,8 +24,6 @@ import { FooterLine } from '../components/FooterLine'
 import { JourneyPath } from '../components/JourneyPath'
 import { Plant } from '../components/Plant'
 import { Bloom, Chip, LeafIcon } from '../components/ui'
-
-const EDITING_KEY = 'bp-start:editing'
 
 interface Moment {
   id: number
@@ -69,6 +67,8 @@ export function ChloePage() {
     }
   }
   const editing = editingId ? state.tasks.find((t) => t.id === editingId && t.doneAt) : undefined
+  // A stale marker (task undone, data reset) must never pop an edit card open later.
+  if (editingId && !editing) setEditingId(null)
   // Only move focus after she has done something (never on first page load).
   const interacted = useRef(false)
   const [spotlightRequest, setSpotlightRequest] = useState<string | null>(null)

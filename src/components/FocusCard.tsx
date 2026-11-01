@@ -69,7 +69,9 @@ export function FocusCard({
     const target = cardRef.current.querySelector<HTMLElement>(
       'input:not([type=hidden]):not([disabled]), textarea, select, [role=region][tabindex]',
     )
-    ;(target ?? cardRef.current.querySelector<HTMLElement>('h2'))?.focus({ preventScroll: false })
+    // Cards without fields (handoffs) focus their primary button instead.
+    const fallback = cardRef.current.querySelector<HTMLElement>('button[type=submit]:not([disabled])')
+    ;(target ?? fallback ?? cardRef.current.querySelector<HTMLElement>('h2'))?.focus({ preventScroll: false })
   }, [autoFocus])
 
   // All timers are tracked, so nothing fires after the card unmounts (e.g. Reset mid-save).

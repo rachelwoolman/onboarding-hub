@@ -72,15 +72,15 @@ interface ChoiceOption {
   hint?: string
 }
 
-function ChoiceMark({ type, checked }: { type: 'radio' | 'checkbox'; checked: boolean }) {
+function ChoiceMark({ checked }: { checked: boolean }) {
   return (
     <span
       aria-hidden="true"
-      className={`mt-0.5 flex size-5 shrink-0 items-center justify-center transition duration-200 peer-focus-visible:ring-2 peer-focus-visible:ring-leaf peer-focus-visible:ring-offset-2 ${
-        type === 'radio' ? 'rounded-full' : 'rounded-md'
-      } ${checked ? 'bg-leaf text-paper' : 'bg-paper ring-1 ring-sage-deep'}`}
+      className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md transition duration-200 peer-focus-visible:ring-2 peer-focus-visible:ring-leaf peer-focus-visible:ring-offset-2 ${
+        checked ? 'bg-leaf text-paper' : 'bg-paper ring-1 ring-sage-deep'
+      }`}
     >
-      {checked && (type === 'radio' ? <span className="size-2 rounded-full bg-paper" /> : <CheckIcon className="size-3" />)}
+      {checked && <CheckIcon className="size-3" />}
     </span>
   )
 }
@@ -114,43 +114,6 @@ function ChoiceGroup({
 
 const choiceRow = 'flex cursor-pointer items-start gap-3 rounded-xl px-3 py-2.5 text-[15px] text-ink transition hover:bg-paper'
 
-export function RadioGroup(props: {
-  id: string
-  name: string
-  legend: string
-  options: ChoiceOption[]
-  value: string
-  onChange: (v: string) => void
-  onBlur?: () => void
-  error: string | null
-  hint?: string
-}) {
-  const { id, name, value, onChange, onBlur } = props
-  return (
-    <ChoiceGroup {...props}>
-      {(o, i) => (
-        <label key={o.value} className={choiceRow}>
-          <input
-            id={i === 0 ? id : undefined}
-            type="radio"
-            name={name}
-            value={o.value}
-            checked={value === o.value}
-            onChange={() => onChange(o.value)}
-            onBlur={onBlur}
-            className="peer sr-only"
-          />
-          <ChoiceMark type="radio" checked={value === o.value} />
-          <span>
-            {o.label}
-            {o.hint && <span className="block text-[13px] text-ink-muted">{o.hint}</span>}
-          </span>
-        </label>
-      )}
-    </ChoiceGroup>
-  )
-}
-
 export function CheckboxGroup(props: {
   id: string
   legend: string
@@ -175,7 +138,7 @@ export function CheckboxGroup(props: {
             onBlur={onBlur}
             className="peer sr-only"
           />
-          <ChoiceMark type="checkbox" checked={value.includes(o.value)} />
+          <ChoiceMark checked={value.includes(o.value)} />
           <span>
             {o.label}
             {o.hint && <span className="block text-[13px] text-ink-muted">{o.hint}</span>}
@@ -183,59 +146,5 @@ export function CheckboxGroup(props: {
         </label>
       )}
     </ChoiceGroup>
-  )
-}
-
-export function Stepper({
-  id,
-  label,
-  value,
-  onChange,
-  min = 0,
-  max = 10,
-}: {
-  id: string
-  label: string
-  value: number
-  onChange: (v: number) => void
-  min?: number
-  max?: number
-}) {
-  const clamp = (n: number) => Math.min(max, Math.max(min, Number.isFinite(n) ? Math.round(n) : min))
-  const btn =
-    'flex size-12 items-center justify-center rounded-xl bg-cream/60 text-xl text-ink-soft ring-1 ring-line transition hover:bg-paper hover:text-ink disabled:opacity-40'
-  return (
-    <div>
-      <label htmlFor={id} className="mb-1.5 block text-[14px] font-medium text-ink">
-        {label}
-      </label>
-      <div className="flex items-center gap-2">
-        <button type="button" className={btn} onClick={() => onChange(clamp(value - 1))} disabled={value <= min} aria-label="One fewer">
-          −
-        </button>
-        <input
-          id={id}
-          type="number"
-          inputMode="numeric"
-          min={min}
-          max={max}
-          value={value}
-          onChange={(e) => onChange(clamp(Number(e.target.value)))}
-          className={`${inputBase} w-20 text-center`}
-        />
-        <button type="button" className={btn} onClick={() => onChange(clamp(value + 1))} disabled={value >= max} aria-label="One more">
-          +
-        </button>
-      </div>
-    </div>
-  )
-}
-
-export function SectionHeading({ children, step }: { children: ReactNode; step: string }) {
-  return (
-    <h3 className="flex items-center gap-2.5 text-[13px] font-semibold uppercase tracking-[0.1em] text-leaf-deep">
-      <span className="flex size-6 items-center justify-center rounded-full bg-sage text-[11px]">{step}</span>
-      {children}
-    </h3>
   )
 }

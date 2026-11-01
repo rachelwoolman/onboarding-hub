@@ -21,6 +21,7 @@ export function generatePlan(role: Role, startDate: ISODate, hireId: string): Pl
         tasks.push({
           ...t,
           steps: t.steps ? [...t.steps] : undefined,
+          portal: t.portal ? { ...t.portal, haveReady: [...t.portal.haveReady] } : undefined,
           id: `${hireId}:${t.key}`,
           hireId,
           phase: phase.id,

@@ -30,7 +30,19 @@ export function clearDraft(taskId: string): void {
   }
 }
 
+/** Which done task is open for editing in this tab (survives a refresh, not a Reset). */
+export const EDITING_KEY = 'bp-start:editing'
+
+export function clearEditingMarker(): void {
+  try {
+    window.sessionStorage.removeItem(EDITING_KEY)
+  } catch {
+    // ignore
+  }
+}
+
 export function clearAllDrafts(): void {
+  clearEditingMarker()
   try {
     const keys: string[] = []
     for (let i = 0; i < window.localStorage.length; i++) {

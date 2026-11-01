@@ -1,4 +1,4 @@
-import type { Owner, PhaseId, Role, TaskKind } from './types'
+import type { Owner, PhaseId, PortalHandoff, Role, TaskKind } from './types'
 
 /**
  * Role-based onboarding templates. In a real product Sarah (HR) would edit these.
@@ -8,6 +8,7 @@ import type { Owner, PhaseId, Role, TaskKind } from './types'
 export interface TaskTemplate {
   key: string
   kind?: TaskKind
+  portal?: PortalHandoff
   title: string
   short: string
   why: string
@@ -52,7 +53,7 @@ export interface RoleTemplate {
 
 const confirmDetails: TaskTemplate = {
   key: 'confirm-details',
-    kind: 'form',
+  kind: 'form',
   title: 'Confirm your name and contact details',
   short: 'Your details',
   why: 'So IT can create your BrightPath email and accounts.',
@@ -79,29 +80,38 @@ const backgroundCheck: TaskTemplate = {
   dueOffset: -7,
 }
 
+// Sensitive paperwork is handed off to BrightPath's secure HR portal, never collected here.
 const i9w4: TaskTemplate = {
   key: 'i9-w4',
-    kind: 'form',
+  kind: 'handoff',
   title: 'Complete I-9 and W-4',
   short: 'I-9 and W-4',
-  why: 'So you can be paid correctly from your first week.',
+  why: 'Confirms you can work in the U.S. and sets up your tax withholding.',
+  portal: {
+    formName: 'Form I-9 and W-4',
+    haveReady: ['Your home address', 'Your Social Security number', 'Your filing status and number of dependents'],
+  },
   minutes: 15,
   dueOffset: -1,
 }
 
 const directDeposit: TaskTemplate = {
   key: 'direct-deposit',
-    kind: 'form',
+  kind: 'handoff',
   title: 'Set up direct deposit',
   short: 'Direct deposit',
-  why: 'So your first paycheck lands in the right place.',
+  why: 'Tells payroll where to send your first paycheck.',
+  portal: {
+    formName: 'Direct deposit',
+    haveReady: ['Your bank’s name', 'Bank routing and account number'],
+  },
   minutes: 5,
   dueOffset: -1,
 }
 
 const welcomeGuide: TaskTemplate = {
   key: 'welcome-guide',
-    kind: 'read',
+  kind: 'read',
   title: 'Read your day-1 welcome guide',
   short: 'Welcome guide',
   why: 'Where to go, who to ask for, and what Monday looks like.',
@@ -112,7 +122,7 @@ const welcomeGuide: TaskTemplate = {
 function slackInvite(teamChannel: string): TaskTemplate {
   return {
     key: 'slack-invite',
-    kind: 'steps',
+  kind: 'steps',
     title: 'Accept your Slack invite',
     short: 'Slack invite',
     why: 'Your team says hi here first.',
@@ -210,7 +220,7 @@ const engineering: RoleTemplate = {
             welcomeGuide,
             {
               key: 'repo-access',
-    kind: 'request',
+  kind: 'request',
               title: 'Request access to the production repo',
               short: 'Repo access',
               why: 'Your manager approves it, so it’s ready when you need it.',
@@ -347,7 +357,7 @@ const design: RoleTemplate = {
             slackInvite('design'),
             {
               key: 'figma-access',
-    kind: 'request',
+  kind: 'request',
               title: 'Request a Figma seat',
               short: 'Figma seat',
               why: 'Your manager approves it, so it’s ready on day 1.',

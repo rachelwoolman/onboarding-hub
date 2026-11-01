@@ -38,35 +38,6 @@ export function email(v: string): string | null {
   return null
 }
 
-export function zip(v: string): string | null {
-  if (!v.trim()) return 'Add your ZIP code.'
-  return /^\d{5}(-\d{4})?$/.test(v.trim()) ? null : 'ZIP codes are 5 digits, like 94110.'
-}
-
-/** ABA routing number checksum: 3·(d1+d4+d7) + 7·(d2+d5+d8) + (d3+d6+d9) ≡ 0 (mod 10). */
-export function isValidRouting(v: string): boolean {
-  if (!/^\d{9}$/.test(v)) return false
-  const d = v.split('').map(Number)
-  const sum = 3 * (d[0] + d[3] + d[6]) + 7 * (d[1] + d[4] + d[7]) + (d[2] + d[5] + d[8])
-  return sum % 10 === 0
-}
-
-export function routing(v: string): string | null {
-  const d = digitsOnly(v)
-  if (!v.trim()) return 'Add your bank’s routing number.'
-  if (d.length !== 9) return `Routing numbers are 9 digits. This one has ${d.length}.`
-  if (!isValidRouting(d)) return 'That routing number doesn’t check out. Mind looking again?'
-  return null
-}
-
-export function account(v: string): string | null {
-  const d = digitsOnly(v)
-  if (!v.trim()) return 'Add your account number.'
-  if (d.length < 4) return 'That account number looks short.'
-  if (d.length > 17) return 'That account number looks a little long.'
-  return null
-}
-
 export function githubUsername(v: string): string | null {
   const t = v.trim().replace(/^@/, '')
   if (!t) return 'Add your GitHub username so Mateo knows who to add.'
@@ -74,30 +45,4 @@ export function githubUsername(v: string): string | null {
   if (!/^[a-z\d](?:[a-z\d]|-(?=[a-z\d]))*$/i.test(t))
     return 'Usernames use letters, numbers and single dashes, and don’t start or end with a dash.'
   return null
-}
-
-// I-9 documents ----------------------------------------------------------------
-
-export interface DocOption {
-  id: string
-  label: string
-  list: 'A' | 'B' | 'C'
-}
-
-/** A simplified version of the I-9 acceptable documents lists. */
-export const I9_DOCUMENTS: DocOption[] = [
-  { id: 'passport', label: 'U.S. passport or passport card', list: 'A' },
-  { id: 'green-card', label: 'Permanent resident card', list: 'A' },
-  { id: 'license', label: 'Driver’s license or state ID', list: 'B' },
-  { id: 'ssn-card', label: 'Social Security card', list: 'C' },
-  { id: 'birth-cert', label: 'Birth certificate', list: 'C' },
-]
-
-export function i9Documents(ids: string[]): string | null {
-  const lists = new Set(I9_DOCUMENTS.filter((d) => ids.includes(d.id)).map((d) => d.list))
-  if (ids.length === 0) return 'Pick what you’ll bring so HR can check it on day 1.'
-  if (lists.has('A')) return null
-  if (lists.has('B') && lists.has('C')) return null
-  if (lists.has('B')) return 'Add a Social Security card or birth certificate to go with your ID.'
-  return 'Add a photo ID, like a driver’s license, to go with that.'
 }

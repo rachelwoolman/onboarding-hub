@@ -21,7 +21,7 @@ import {
   waitingFor,
 } from './selectors'
 import { parseState } from './storage'
-import { account, email, githubUsername, i9Documents, isValidRouting, phone, routing, zip } from './validation'
+import { email, githubUsername, phone } from './validation'
 import { taskSummary } from './summaries'
 import type { AppState } from './types'
 
@@ -236,24 +236,11 @@ describe('validation', () => {
     expect(email('chloe.example.com')).toBe('That email is missing an @.')
     expect(email('chloe@example')).toMatch(/complete/)
     expect(email('chloe@example.com')).toBeNull()
-    expect(zip('9411')).toMatch(/5 digits/)
   })
-  it('checks ABA routing numbers', () => {
-    expect(isValidRouting('011000015')).toBe(true) // Federal Reserve Bank of Boston
-    expect(isValidRouting('021000021')).toBe(true)
-    expect(isValidRouting('123456789')).toBe(false)
-    expect(routing('12345')).toMatch(/9 digits/)
-    expect(routing('123456789')).toMatch(/check out/)
-    expect(account('12')).toMatch(/short/)
-  })
-  it('checks GitHub usernames and I-9 documents', () => {
+  it('checks GitHub usernames', () => {
     expect(githubUsername('chloe-z')).toBeNull()
     expect(githubUsername('-chloe')).toMatch(/dash/)
     expect(githubUsername('chloe--z')).toMatch(/dash/)
-    expect(i9Documents(['passport'])).toBeNull()
-    expect(i9Documents(['license', 'ssn-card'])).toBeNull()
-    expect(i9Documents(['license'])).toMatch(/Social Security/)
-    expect(i9Documents([])).toMatch(/Pick/)
   })
 })
 
@@ -266,19 +253,39 @@ describe('doing tasks', () => {
   })
 
   it('saves form data, and editing keeps progress and the plant', () => {
-    const id = `${C}:direct-deposit`
+    const id = `${C}:confirm-details`
     let s = reducer(seed(), {
       type: 'completeTask',
       taskId: id,
-      data: { bankName: 'Fake Bank', routing: '011000015', accountType: 'checking', accountLast4: '4321' },
+      data: { firstName: 'Chloe', lastName: 'Zhang', preferredName: '', phone: '5550101234', email: 'chloe@example.com' },
     })
     const counts = phaseCounts(s, C)
     const stage = plantStage(s, C)
-    expect(taskSummary(s.tasks.find((t) => t.id === id)!)).toBe('Checking ····4321')
-    s = reducer(s, { type: 'updateTaskData', taskId: id, data: { accountType: 'savings', accountLast4: '9876' } })
-    expect(taskSummary(s.tasks.find((t) => t.id === id)!)).toBe('Savings ····9876')
+    expect(taskSummary(s.tasks.find((t) => t.id === id)!)).toBe('Chloe Zhang · (555) 010-1234')
+    s = reducer(s, {
+      type: 'updateTaskData',
+      taskId: id,
+      data: { firstName: 'Chloe', lastName: 'Zhang', preferredName: 'Chlo', phone: '5550109999', email: 'chloe@example.com' },
+    })
+    expect(taskSummary(s.tasks.find((t) => t.id === id)!)).toBe('Chlo · (555) 010-9999')
     expect(phaseCounts(s, C)).toEqual(counts)
     expect(plantStage(s, C)).toBe(stage)
+  })
+
+  it('hands sensitive paperwork off to the HR portal instead of collecting it', () => {
+    const s = seed()
+    for (const key of ['i9-w4', 'direct-deposit']) {
+      const t = s.tasks.find((x) => x.hireId === C && x.key === key)!
+      expect(t.kind).toBe('handoff')
+      expect(t.portal?.haveReady.length).toBeGreaterThan(0)
+    }
+    const id = `${C}:i9-w4`
+    let done = reducer(s, { type: 'completeTask', taskId: id, data: { finishedAt: '2026-11-06T18:00:00Z' } })
+    expect(taskSummary(done.tasks.find((t) => t.id === id)!)).toBe('Finished in the secure HR portal')
+    // Reopening and finishing again keeps it done and the count unchanged.
+    const before = phaseCounts(done, C)
+    done = reducer(done, { type: 'updateTaskData', taskId: id, data: { finishedAt: '2026-11-07T10:00:00Z' } })
+    expect(phaseCounts(done, C)).toEqual(before)
   })
 
   it('carries request details and resends a declined request when edited', () => {

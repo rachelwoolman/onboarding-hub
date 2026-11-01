@@ -79,7 +79,8 @@ export function FooterLine({
           <ul className="mt-3 space-y-0.5 rounded-card bg-paper/70 p-2">
             {done.map((t) => {
               const summary = taskSummary(t)
-              const editable = t.kind === 'form' || t.kind === 'request'
+              const editable = t.kind === 'form' || t.kind === 'request' || t.kind === 'handoff'
+              const editLabel = t.kind === 'handoff' ? 'Reopen' : 'Edit'
               const isEditing = editingId === t.id
               return (
                 <li key={t.id} className="flex items-center gap-3 rounded-xl px-3 py-2 text-[14px]">
@@ -97,10 +98,10 @@ export function FooterLine({
                       type="button"
                       onClick={() => (editable ? onEdit(t.id) : onUndo(t.id))}
                       tabIndex={open === 'done' ? 0 : -1}
-                      aria-label={`${editable ? 'Edit' : 'Undo'}: ${t.title}`}
+                      aria-label={`${editable ? editLabel : 'Undo'}: ${t.title}`}
                       className="rounded-full px-2.5 py-1 text-xs font-medium text-ink-muted transition hover:bg-sage hover:text-ink"
                     >
-                      {editable ? 'Edit' : 'Undo'}
+                      {editable ? editLabel : 'Undo'}
                     </button>
                   )}
                 </li>
