@@ -4,6 +4,7 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useState,
   type ReactNode,
 } from 'react'
 import { reducer, type Action } from '../data/reducer'
@@ -36,12 +37,15 @@ interface Actions {
 interface Store {
   state: AppState
   actions: Actions
+  /** Bumps on Reset, so pages remount and no in-progress form keeps old values. */
+  resetKey: number
 }
 
 const StoreContext = createContext<Store | null>(null)
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, loadState)
+  const [resetKey, setResetKey] = useState(0)
 
   // Persist every change.
   useEffect(() => saveState(state), [state])
@@ -91,11 +95,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       resetData: () => {
         clearAllDrafts()
         d({ type: 'resetData' })
+        setResetKey((k) => k + 1)
       },
     }
   }, [])
 
-  const value = useMemo(() => ({ state, actions }), [state, actions])
+  const value = useMemo(() => ({ state, actions, resetKey }), [state, actions, resetKey])
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
 }
 

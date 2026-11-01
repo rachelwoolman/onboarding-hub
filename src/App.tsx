@@ -5,11 +5,11 @@ import { ChloePage } from './pages/ChloePage'
 import { useStore } from './state/store'
 
 function App() {
-  const { state } = useStore()
+  const { state, resetKey } = useStore()
   return (
     <div className="flex min-h-dvh flex-col">
       <TopBar />
-      {state.view === 'hire' ? <ChloePage /> : <ManagerPlaceholder />}
+      {state.view === 'hire' ? <ChloePage key={resetKey} /> : <ManagerPlaceholder />}
       <DemoControls />
     </div>
   )
