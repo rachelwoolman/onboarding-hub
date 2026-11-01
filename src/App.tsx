@@ -1,14 +1,27 @@
+import { DemoControls } from './components/DemoControls'
+import { TopBar } from './components/TopBar'
+import { Plant } from './components/Plant'
+import { ChloePage } from './pages/ChloePage'
+import { useStore } from './state/store'
+
 function App() {
+  const { state } = useStore()
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
-      <div className="rounded-2xl bg-white p-10 text-center shadow-lg dark:bg-slate-800">
-        <h1 className="text-5xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400">
-          Hello
-        </h1>
-        <p className="mt-3 text-slate-600 dark:text-slate-300">
-          Welcome to the onboarding hub.
-        </p>
-      </div>
+    <div className="flex min-h-dvh flex-col">
+      <TopBar />
+      {state.view === 'hire' ? <ChloePage /> : <ManagerPlaceholder />}
+      <DemoControls />
+    </div>
+  )
+}
+
+/** Mateo's page arrives in step 3. */
+function ManagerPlaceholder() {
+  return (
+    <main className="mx-auto w-full max-w-[720px] px-5 pt-16 text-center sm:px-8">
+      <Plant stage="sprout" className="mx-auto size-24" />
+      <h1 className="mt-4 font-serif text-4xl text-ink">Good morning, Mateo</h1>
+      <p className="mt-3 text-ink-soft">Your garden is coming in the next step.</p>
     </main>
   )
 }
