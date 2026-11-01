@@ -57,8 +57,7 @@ export function createSeed(realToday: ISODate = toISODate(new Date())): AppState
     }
   }
 
-  // Chloe: 2 of 6 pre-start tasks done (both signed before this page existed).
-  markDone('chloe', ['offer-letter', 'background-check'])
+  // Chloe: nothing done yet; she opens the page fresh.
 
   // Priya: all of pre-start and day 1 (10 of 18 = 56%), now blocked on GitHub access from IT.
   const priyaDone = tasks

@@ -8,8 +8,6 @@ import type { Owner, PhaseId, PortalHandoff, Role, TaskKind } from './types'
 
 export interface TaskTemplate {
   key: string
-  /** Done outside this page before it existed (e.g. signed with the offer). */
-  external?: boolean
   kind?: TaskKind
   portal?: PortalHandoff
   title: string
@@ -73,26 +71,6 @@ const confirmDetails: TaskTemplate = {
   minutes: 2,
   dueOffset: -3,
   unblocks: 'IT',
-}
-
-const offerLetter: TaskTemplate = {
-  key: 'offer-letter',
-  external: true,
-  title: 'Sign your offer letter',
-  short: 'Offer letter',
-  why: 'Makes it official.',
-  minutes: 5,
-  dueOffset: -7,
-}
-
-const backgroundCheck: TaskTemplate = {
-  key: 'background-check',
-  external: true,
-  title: 'Consent to background check',
-  short: 'Background check',
-  why: 'A standard step for everyone who joins.',
-  minutes: 3,
-  dueOffset: -7,
 }
 
 // Sensitive paperwork is handed off to BrightPath's secure HR portal, never collected here.
@@ -206,7 +184,7 @@ const engineering: RoleTemplate = {
       opensOn: -Infinity,
       stops: [
         { name: 'Quick start', tasks: [confirmDetails] },
-        { name: 'Paperwork', tasks: [offerLetter, backgroundCheck, i9w4] },
+        { name: 'Paperwork', tasks: [i9w4] },
         {
           name: 'Get connected',
           tasks: [
@@ -346,7 +324,7 @@ const design: RoleTemplate = {
       opensOn: -Infinity,
       stops: [
         { name: 'Quick start', tasks: [confirmDetails] },
-        { name: 'Paperwork', tasks: [offerLetter, i9w4] },
+        { name: 'Paperwork', tasks: [i9w4] },
         {
           name: 'Get connected',
           tasks: [

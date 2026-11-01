@@ -97,10 +97,6 @@ export function compareFocus(a: Task, b: Task): number {
   const ua = a.unblocks ? 0 : 1
   const ub = b.unblocks ? 0 : 1
   if (ua !== ub) return ua - ub
-  // "I'll do this later" sends a task to the back of the queue.
-  const da = a.deferred ? 1 : 0
-  const db = b.deferred ? 1 : 0
-  if (da !== db) return da - db
   if (a.dueOffset !== b.dueOffset) return a.dueOffset - b.dueOffset
   if (a.stop !== b.stop) return a.stop - b.stop
   return a.order - b.order
@@ -126,9 +122,7 @@ export function getUpNext(state: AppState, hireId: string): Task[] {
 export interface StopSummary {
   index: number
   name: string
-  /** Tasks she does in this stop on this page (not ones signed before it existed). */
   total: number
-  /** Of those, how many are still open (deferred ones included). */
   remaining: number
   minutesLeft: number
   done: boolean
@@ -143,9 +137,7 @@ export function getStops(state: AppState, hireId: string): StopSummary[] {
   const tasks = phaseTasks(state, hireId, phase)
   const current = getCurrentStop(state, hireId)
   return tpl.stops.map((s, index) => {
-    // "X of Y left in this stop" is about her work here, so tasks done before
-    // this page existed (offer letter, background check) aren't counted.
-    const inStop = tasks.filter((t) => t.stop === index && !t.external)
+    const inStop = tasks.filter((t) => t.stop === index)
     const open = inStop.filter((t) => !isDone(t))
     return {
       index,

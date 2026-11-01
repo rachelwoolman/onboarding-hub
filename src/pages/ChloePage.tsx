@@ -92,10 +92,6 @@ export function ChloePage() {
     if (task?.kind === 'request') setSpotlightRequest(`req:${taskId}`)
     actions.completeTask(taskId, data)
   }
-  const defer = (taskId: string) => {
-    interacted.current = true
-    actions.deferTask(taskId)
-  }
   const startEdit = (taskId: string) => {
     interacted.current = true
     setEditingId(taskId)
@@ -267,9 +263,7 @@ export function ChloePage() {
                 managerName={hire.managerName}
                 startDay={startDay}
                 autoFocus={interacted.current}
-                canDefer={!focus.deferred && upNext.length > 0}
                 onComplete={complete}
-                onDefer={defer}
                 onToggleStep={actions.toggleStep}
               />
             )}

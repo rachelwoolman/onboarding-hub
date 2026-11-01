@@ -25,8 +25,6 @@ export interface BodyProps {
   draftKey: string
   submit: (data?: TaskData) => void
   footer: (opts: FooterOpts) => ReactNode
-  /** "I'll do this later" (handoff tasks that need things she may not have on hand). */
-  onDefer?: () => void
   onToggleStep: (taskId: string, step: number) => void
 }
 

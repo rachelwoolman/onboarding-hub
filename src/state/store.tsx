@@ -17,7 +17,6 @@ export const IT_PROVISION_MS = 3500
 interface Actions {
   completeTask: (taskId: string, data?: TaskData) => void
   updateTaskData: (taskId: string, data: TaskData) => void
-  deferTask: (taskId: string) => void
   undoTask: (taskId: string) => void
   toggleStep: (taskId: string, step: number) => void
   submitAccessRequest: (taskId: string) => void
@@ -76,7 +75,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return {
       completeTask: (taskId, data) => d({ type: 'completeTask', taskId, data }),
       updateTaskData: (taskId, data) => d({ type: 'updateTaskData', taskId, data }),
-      deferTask: (taskId) => d({ type: 'deferTask', taskId }),
       undoTask: (taskId) => d({ type: 'undoTask', taskId }),
       toggleStep: (taskId, step) => d({ type: 'toggleStep', taskId, step }),
       submitAccessRequest: (taskId) => d({ type: 'submitAccessRequest', taskId }),

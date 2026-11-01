@@ -25,11 +25,9 @@ interface FocusCardProps {
   startDay?: string
   /** Move focus into the card when it appears (not on first page load). */
   autoFocus?: boolean
-  canDefer?: boolean
   onComplete: (taskId: string, data?: TaskData) => void
   onSaveEdit?: (taskId: string, data: TaskData) => void
   onCancelEdit?: () => void
-  onDefer?: (taskId: string) => void
   onToggleStep: (taskId: string, step: number) => void
 }
 
@@ -46,11 +44,9 @@ export function FocusCard({
   managerName,
   startDay = 'Monday',
   autoFocus = false,
-  canDefer = false,
   onComplete,
   onSaveEdit,
   onCancelEdit,
-  onDefer,
   onToggleStep,
 }: FocusCardProps) {
   const [phase, setPhase] = useState<Phase>('idle')
@@ -206,7 +202,6 @@ export function FocusCard({
           submit,
           footer,
           onToggleStep,
-          onDefer: canDefer && onDefer ? () => onDefer(task.id) : undefined,
         })}
       </div>
     </article>

@@ -46,11 +46,6 @@ export type TaskData = Record<string, string | string[] | number | boolean>
 export interface Task {
   id: string
   kind?: TaskKind
-  /**
-   * Done outside this page before it existed (offer letter, background check).
-   * Counts toward "2 of 7 done" but isn't work left in a stop.
-   */
-  external?: boolean
   hireId: string
   /** Stable template key, e.g. "confirm-details". */
   key: string
@@ -79,8 +74,6 @@ export interface Task {
   doneAt?: string
   /** Saved form values. Kept when a done task is edited. */
   data?: TaskData
-  /** "I'll do this later": goes to the back of the queue. */
-  deferred?: boolean
 }
 
 export type RequestStatus = 'waitingOnManager' | 'approved' | 'ready' | 'declined'

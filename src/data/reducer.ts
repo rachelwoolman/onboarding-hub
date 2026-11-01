@@ -6,7 +6,6 @@ import type { AccessRequest, AppState, ISODate, TaskData, View, WaitingItem } fr
 export type Action =
   | { type: 'completeTask'; taskId: string; data?: TaskData; at?: string }
   | { type: 'updateTaskData'; taskId: string; data: TaskData; at?: string }
-  | { type: 'deferTask'; taskId: string }
   | { type: 'undoTask'; taskId: string }
   | { type: 'toggleStep'; taskId: string; step: number }
   | { type: 'submitAccessRequest'; taskId: string; at?: string }
@@ -49,7 +48,6 @@ export function reducer(state: AppState, action: Action): AppState {
       let next = updateTask(state, task.id, (t) => ({
         ...t,
         doneAt: at,
-        deferred: undefined,
         data: action.data ?? t.data,
       }))
       if (task.approval) next = reducer(next, { type: 'submitAccessRequest', taskId: task.id, at })
@@ -87,12 +85,6 @@ export function reducer(state: AppState, action: Action): AppState {
         })
       }
       return next
-    }
-
-    case 'deferTask': {
-      const task = state.tasks.find((t) => t.id === action.taskId)
-      if (!task || task.doneAt || task.deferred) return state
-      return updateTask(state, task.id, (t) => ({ ...t, deferred: true }))
     }
 
     case 'undoTask': {

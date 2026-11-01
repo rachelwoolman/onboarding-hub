@@ -10,7 +10,7 @@ type View = 'card' | 'portal'
  * portal, never typed into this app. The card says what it is and what to have ready,
  * opens the portal (a clearly labeled mock here), then asks her to confirm she finished.
  */
-export function HandoffBody({ task, mode, idPrefix, draftKey, submit, footer, onDefer }: BodyProps) {
+export function HandoffBody({ task, mode, idPrefix, draftKey, submit, footer }: BodyProps) {
   const portal = task.portal
   const editing = mode === 'edit'
   const [view, setView] = useState<View>('card')
@@ -126,13 +126,7 @@ export function HandoffBody({ task, mode, idPrefix, draftKey, submit, footer, on
           <button type="button" onClick={open} className={linkCls}>
             Open it again
           </button>
-        ) : (
-          onDefer && (
-            <button type="button" onClick={onDefer} className={linkCls}>
-              I’ll do this later
-            </button>
-          )
-        ),
+        ) : undefined,
       })}
     </form>
   )

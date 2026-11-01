@@ -78,12 +78,12 @@ describe('seed', () => {
 })
 
 describe('Chloe before day 1', () => {
-  it('shows 2 of 6 done, 25 minutes, 33%, sprout', () => {
+  it('starts at 0 of 4 done, 25 minutes, 0%, seed', () => {
     const s = seed()
-    expect(phaseCounts(s, C)).toEqual({ done: 2, total: 6 })
+    expect(phaseCounts(s, C)).toEqual({ done: 0, total: 4 })
     expect(minutesLeft(s, C)).toBe(25)
-    expect(progressPercent(s, C)).toBe(33)
-    expect(plantStage(s, C)).toBe('sprout')
+    expect(progressPercent(s, C)).toBe(0)
+    expect(plantStage(s, C)).toBe('seed')
   })
 
   it('focuses the task that unblocks IT first, then earliest due, then stop order', () => {
@@ -113,8 +113,9 @@ describe('Chloe before day 1', () => {
     expect(stageForPercent(1)).toBe('sprout')
     expect(stageForPercent(60)).toBe('leafy')
     expect(stageForPercent(100)).toBe('bloom')
-    const s = completeKeys(seed(), C, ['confirm-details', 'i9-w4'])
-    expect(plantStage(s, C)).toBe('leafy') // 4 of 6
+    expect(plantStage(completeKeys(seed(), C, ['confirm-details']), C)).toBe('sprout') // 1 of 4
+    const s = completeKeys(seed(), C, ['confirm-details', 'i9-w4', 'slack-invite'])
+    expect(plantStage(s, C)).toBe('leafy') // 3 of 4
   })
 
   it('is all set for Monday once every pre-start task is done', () => {
@@ -159,7 +160,7 @@ describe('reducer safety', () => {
     let s = completeKeys(seed(), C, ['code-access'])
     s = reducer(s, { type: 'undoTask', taskId: `${C}:code-access` })
     expect(s.requests).toHaveLength(0)
-    expect(phaseCounts(s, C).done).toBe(2)
+    expect(phaseCounts(s, C).done).toBe(0)
   })
 
   it('rejects corrupt saved data', () => {
@@ -205,12 +206,14 @@ describe('later phases', () => {
 describe('manager view data', () => {
   it('matches the garden story', () => {
     const s = seed()
-    expect(progressPercent(s, 'priya')).toBe(56)
+    expect(progressPercent(s, 'priya')).toBe(50)
     expect(hireStatus(s, 'priya')).toBe('blocked')
     expect(waitingFor(s, 'priya')[0].daysWaiting).toBe(3)
     expect(progressPercent(s, 'jordan')).toBe(0)
     expect(hireStatus(s, 'jordan')).toBe('notStarted')
-    expect(hireStatus(s, C)).toBe('onTrack')
+    // Chloe hasn't done anything yet; one task later she's on track.
+    expect(hireStatus(s, C)).toBe('notStarted')
+    expect(hireStatus(completeKeys(s, C, ['confirm-details']), C)).toBe('onTrack')
   })
 })
 
@@ -218,7 +221,8 @@ describe('generatePlan', () => {
   it('builds different plans per role and copes with an empty plan', () => {
     const eng = generatePlan('Engineering', '2026-11-02', 'a')
     const des = generatePlan('Design', '2026-11-02', 'b')
-    expect(eng.tasks.length).toBe(18)
+    expect(eng.tasks.length).toBe(16)
+    expect(eng.tasks.some((t) => t.key === 'offer-letter')).toBe(false)
     expect(eng.tasks.some((t) => t.key === 'monday-check')).toBe(false)
     expect(eng.tasks.some((t) => t.key === 'direct-deposit')).toBe(false)
     expect(des.tasks.length).toBeLessThan(eng.tasks.length)
@@ -304,18 +308,7 @@ describe('doing tasks', () => {
     expect(activeRequest(s, C)).toBeNull()
   })
 
-  it('"I\'ll do this later" sends a task to the back of the queue', () => {
-    let s = completeKeys(seed(), C, ['confirm-details'])
-    expect(getFocusTask(s, C)?.key).toBe('i9-w4')
-    s = reducer(s, { type: 'deferTask', taskId: `${C}:i9-w4` })
-    expect(getFocusTask(s, C)?.key).toBe('slack-invite')
-    // Deferring never changes a stop's own count.
-    expect(getStops(s, C).map((x) => [x.remaining, x.total])).toEqual([[0, 1], [1, 1], [2, 2]])
-    s = completeKeys(s, C, ['slack-invite', 'code-access'])
-    expect(getFocusTask(s, C)?.key).toBe('i9-w4')
-  })
-
-  it('counts only the work left in each stop, not tasks signed before the page', () => {
+  it('counts each stop from its own tasks', () => {
     let s = seed()
     expect(getStops(s, C).map((x) => [x.name, x.remaining, x.total])).toEqual([
       ['Quick start', 1, 1],
@@ -324,8 +317,7 @@ describe('doing tasks', () => {
     ])
     s = completeKeys(s, C, ['confirm-details', 'i9-w4', 'slack-invite'])
     expect(getStops(s, C)[2]).toMatchObject({ remaining: 1, total: 2, current: true })
-    // Phase totals still include the two signed tasks.
-    expect(phaseCounts(s, C)).toEqual({ done: 5, total: 6 })
+    expect(phaseCounts(s, C)).toEqual({ done: 3, total: 4 })
   })
 })
 
