@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type Ref } from 'react'
 import { weekday } from '../data/dates'
 import {
+  displayName,
   getFocusTask,
   getHire,
   getStops,
@@ -14,13 +15,17 @@ import {
   plantStage,
   waitingFor,
 } from '../data/selectors'
-import type { Hire, PhaseId, PlantStage } from '../data/types'
+import { clearDraft } from '../data/drafts'
+import { phaseTemplate } from '../data/templates'
+import type { Hire, PhaseId, PlantStage, TaskData } from '../data/types'
 import { useStore } from '../state/store'
 import { FocusCard } from '../components/FocusCard'
 import { FooterLine } from '../components/FooterLine'
 import { JourneyPath } from '../components/JourneyPath'
 import { Plant } from '../components/Plant'
 import { Bloom, Chip, LeafIcon } from '../components/ui'
+
+const EDITING_KEY = 'bp-start:editing'
 
 interface Moment {
   id: number
@@ -40,8 +45,65 @@ export function ChloePage() {
   const upNext = getUpNext(state, hireId)
   const waiting = waitingFor(state, hireId)
   const allRequests = state.requests.filter((r) => r.hireId === hireId)
-  const doneTasks =
-    page.kind === 'focus' ? phaseTasks(state, hireId, page.phase).filter(isDone) : []
+  const listPhase: PhaseId | null =
+    page.kind === 'focus' ? page.phase : page.kind === 'allSetForStart' ? 'preStart' : null
+  const doneTasks = listPhase ? phaseTasks(state, hireId, listPhase).filter(isDone) : []
+  const name = displayName(state, hireId)
+
+  // Editing a finished task happens in the card slot, one thing at a time.
+  // Remembered for this tab, so a refresh mid-edit reopens the same card.
+  const [editingId, setEditingIdState] = useState<string | null>(() => {
+    try {
+      return window.sessionStorage.getItem(EDITING_KEY)
+    } catch {
+      return null
+    }
+  })
+  const setEditingId = (id: string | null) => {
+    setEditingIdState(id)
+    try {
+      if (id) window.sessionStorage.setItem(EDITING_KEY, id)
+      else window.sessionStorage.removeItem(EDITING_KEY)
+    } catch {
+      // ignore
+    }
+  }
+  const editing = editingId ? state.tasks.find((t) => t.id === editingId && t.doneAt) : undefined
+  // Only move focus after she has done something (never on first page load).
+  const interacted = useRef(false)
+  const [spotlightRequest, setSpotlightRequest] = useState<string | null>(null)
+  const headingRef = useRef<HTMLHeadingElement>(null)
+
+  const complete = (taskId: string, data?: TaskData) => {
+    interacted.current = true
+    const task = state.tasks.find((t) => t.id === taskId)
+    if (task?.kind === 'request') setSpotlightRequest(`req:${taskId}`)
+    actions.completeTask(taskId, data)
+  }
+  const defer = (taskId: string) => {
+    interacted.current = true
+    actions.deferTask(taskId)
+  }
+  const startEdit = (taskId: string) => {
+    interacted.current = true
+    setEditingId(taskId)
+    window.requestAnimationFrame(() =>
+      document.getElementById('task-slot')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+    )
+  }
+  const saveEdit = (taskId: string, data: TaskData) => {
+    actions.updateTaskData(taskId, data)
+    setEditingId(null)
+  }
+  const cancelEdit = () => {
+    if (editingId) clearDraft(`${editingId}:edit`)
+    setEditingId(null)
+  }
+
+  // When the last pre-start task is done, move focus to the new headline.
+  useEffect(() => {
+    if (interacted.current && page.kind !== 'focus') headingRef.current?.focus()
+  }, [page.kind])
 
   let stage: PlantStage = plantStage(state, hireId)
   if (page.kind === 'caughtUp') stage = 'sprout'
@@ -86,6 +148,26 @@ export function ChloePage() {
   const startDay = weekday(hire.startDate)
   const currentStop = focus ? stops[focus.stop] : undefined
 
+  // Rendered inline (not as a nested component type) so it never remounts on re-render.
+  const editCard = editing ? (
+      <FocusCard
+        key={`edit-${editing.id}`}
+        task={editing}
+        mode="edit"
+        stopName={phaseTemplate(hire.role, editing.phase).stops[editing.stop]?.name ?? ''}
+        remainingInStop={0}
+        totalInStop={0}
+        overdue={null}
+        managerName={hire.managerName}
+        startDay={startDay}
+        autoFocus
+        onComplete={() => {}}
+        onSaveEdit={saveEdit}
+        onCancelEdit={cancelEdit}
+        onToggleStep={actions.toggleStep}
+      />
+    ) : null
+
   return (
     <main className="mx-auto w-full max-w-[720px] px-5 pt-8 sm:px-8 sm:pt-14">
       {hire.previousStartDate && (
@@ -95,7 +177,7 @@ export function ChloePage() {
       {/* Header ------------------------------------------------------------ */}
       <header className="flex items-start justify-between gap-4">
         <div className="min-w-0 pt-2 sm:pt-4">
-          <Headline page={page} hire={hire} />
+          <Headline ref={headingRef} page={page} hire={hire} name={name} />
           <p className="mt-3 text-pretty text-[17px] leading-relaxed text-ink-soft sm:text-lg">
             <Subline page={page} minutes={minutes} startDay={startDay} started={state.today >= hire.startDate} />
           </p>
@@ -130,25 +212,36 @@ export function ChloePage() {
             )}
           </div>
 
-          <div className="mt-2">
-            <FocusCard
-              key={focus.id}
-              task={focus}
-              stopName={currentStop.name}
-              remainingInStop={currentStop.remaining}
-              totalInStop={currentStop.total}
-              overdue={overdueLabel(hire, focus, state.today)}
-              onDone={actions.completeTask}
-              onToggleStep={actions.toggleStep}
-            />
+          <div id="task-slot" className="mt-2 scroll-mt-6">
+            {editing ? (
+              editCard
+            ) : (
+              <FocusCard
+                key={focus.id}
+                task={focus}
+                stopName={currentStop.name}
+                remainingInStop={currentStop.remaining}
+                totalInStop={currentStop.total}
+                overdue={overdueLabel(hire, focus, state.today)}
+                managerName={hire.managerName}
+                startDay={startDay}
+                autoFocus={interacted.current}
+                canDefer={!focus.deferred && upNext.length > 0}
+                onComplete={complete}
+                onDefer={defer}
+                onToggleStep={actions.toggleStep}
+              />
+            )}
           </div>
 
-          {upNext.length > 0 && <UpNext titles={upNext.map((t) => t.short)} />}
+          {upNext.length > 0 && !editing && <UpNext titles={upNext.map((t) => t.short)} />}
         </>
       )}
 
       {page.kind === 'allSetForStart' && (
-        <NextUpCard className="mt-12" label={`Next up: ${startDay} 9:30`} title="Meet your manager" />
+        <div id="task-slot" className="mt-12 scroll-mt-6">
+          {editing ? editCard : <NextUpCard label={`Next up: ${startDay} 9:30`} title="Meet your manager" />}
+        </div>
       )}
 
       {page.kind === 'fullyOnboarded' && (
@@ -172,6 +265,9 @@ export function ChloePage() {
             requests={allRequests}
             managerName={hire.managerName}
             onUndo={actions.undoTask}
+            onEdit={startEdit}
+            editingId={editingId}
+            spotlightRequestId={spotlightRequest}
             onResubmit={actions.resubmitRequest}
           />
         </div>
@@ -180,12 +276,22 @@ export function ChloePage() {
   )
 }
 
-function Headline({ page, hire }: { page: ReturnType<typeof hirePageState>; hire: Hire }) {
+function Headline({
+  page,
+  hire,
+  name,
+  ref,
+}: {
+  page: ReturnType<typeof hirePageState>
+  hire: Hire
+  name: string
+  ref: Ref<HTMLHeadingElement>
+}) {
   const serif = 'font-serif text-[40px] leading-[1.05] tracking-[-0.02em] text-ink sm:text-[56px]'
   const text = {
     focus: (
       <>
-        Hi <span className="font-semibold">{hire.firstName}</span>{' '}
+        Hi <span className="font-semibold">{name}</span>{' '}
         <span className="text-[0.8em]" aria-hidden="true">🌱</span>
       </>
     ),
@@ -200,10 +306,10 @@ function Headline({ page, hire }: { page: ReturnType<typeof hirePageState>; hire
         You’re fully onboarded <span className="text-[0.8em]" aria-hidden="true">🌱</span>
       </>
     ),
-    empty: <>Hi {hire.firstName}</>,
+    empty: <>Hi {name}</>,
   }[page.kind]
   return (
-    <h1 className={`${serif} text-balance`} style={{ fontVariationSettings: '"SOFT" 100, "opsz" 96' }}>
+    <h1 ref={ref} tabIndex={-1} className={`${serif} text-balance focus:outline-none`} style={{ fontVariationSettings: '"SOFT" 100, "opsz" 96' }}>
       {text}
     </h1>
   )

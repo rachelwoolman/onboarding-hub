@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { taskSummary } from '../data/summaries'
 import type { WaitingRow } from '../data/selectors'
 import type { AccessRequest, Task } from '../data/types'
 import { CheckIcon, ChevronIcon, ClockIcon } from './ui'
@@ -9,14 +10,34 @@ interface FooterLineProps {
   requests: AccessRequest[]
   managerName: string
   onUndo: (taskId: string) => void
+  onEdit: (taskId: string) => void
+  editingId: string | null
+  /** A request that was just sent: open its tracker so she sees it went through. */
+  spotlightRequestId: string | null
   onResubmit: (requestId: string) => void
 }
 
 type Panel = 'done' | 'waiting' | null
 
 /** "2 done · 1 waiting on others". Each part expands in place. */
-export function FooterLine({ done, waiting, requests, managerName, onUndo, onResubmit }: FooterLineProps) {
+export function FooterLine({
+  done,
+  waiting,
+  requests,
+  managerName,
+  onUndo,
+  onEdit,
+  editingId,
+  spotlightRequestId,
+  onResubmit,
+}: FooterLineProps) {
   const [open, setOpen] = useState<Panel>(null)
+  // Open the tracker once per newly sent request (adjusting state during render, not in an effect).
+  const [shownSpotlight, setShownSpotlight] = useState<string | null>(null)
+  if (spotlightRequestId && spotlightRequestId !== shownSpotlight && requests.some((r) => r.id === spotlightRequestId)) {
+    setShownSpotlight(spotlightRequestId)
+    setOpen('waiting')
+  }
   const live = requests.filter((r) => r.status !== 'ready')
   const waitingCount = waiting.length + live.length
   const showWaiting = waitingCount > 0 || requests.length > 0
@@ -56,22 +77,35 @@ export function FooterLine({ done, waiting, requests, managerName, onUndo, onRes
       <div className="expand mx-auto max-w-lg text-left" data-open={open === 'done'}>
         <div>
           <ul className="mt-3 space-y-0.5 rounded-card bg-paper/70 p-2">
-            {done.map((t) => (
-              <li key={t.id} className="group flex items-center gap-3 rounded-xl px-3 py-2 text-[14px]">
-                <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-sage text-leaf">
-                  <CheckIcon className="size-3" />
-                </span>
-                <span className="flex-1 text-ink-muted line-through decoration-ink-muted/40">{t.title}</span>
-                <button
-                  type="button"
-                  onClick={() => onUndo(t.id)}
-                  tabIndex={open === 'done' ? 0 : -1}
-                  className="rounded-full px-2 py-0.5 text-xs text-ink-muted opacity-70 transition hover:bg-sage hover:text-ink hover:opacity-100"
-                >
-                  Undo
-                </button>
-              </li>
-            ))}
+            {done.map((t) => {
+              const summary = taskSummary(t)
+              const editable = t.kind === 'form' || t.kind === 'request'
+              const isEditing = editingId === t.id
+              return (
+                <li key={t.id} className="flex items-center gap-3 rounded-xl px-3 py-2 text-[14px]">
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-sage text-leaf">
+                    <CheckIcon className="size-3" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-ink-muted line-through decoration-ink-muted/40">{t.title}</span>
+                    {summary && <span className="block truncate text-xs text-ink-muted/80">{summary}</span>}
+                  </span>
+                  {isEditing ? (
+                    <span className="px-2 text-xs text-leaf-deep">Editing</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => (editable ? onEdit(t.id) : onUndo(t.id))}
+                      tabIndex={open === 'done' ? 0 : -1}
+                      aria-label={`${editable ? 'Edit' : 'Undo'}: ${t.title}`}
+                      className="rounded-full px-2.5 py-1 text-xs font-medium text-ink-muted transition hover:bg-sage hover:text-ink"
+                    >
+                      {editable ? 'Edit' : 'Undo'}
+                    </button>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         </div>
       </div>
@@ -90,6 +124,8 @@ export function FooterLine({ done, waiting, requests, managerName, onUndo, onRes
             {requests.map((r) => (
               <li key={r.id}>
                 <RequestTracker
+                  key={`${r.id}-${spotlightRequestId === r.id}`}
+                  defaultOpen={spotlightRequestId === r.id}
                   request={r}
                   managerName={managerName}
                   onResubmit={onResubmit}
@@ -111,13 +147,15 @@ function RequestTracker({
   managerName,
   onResubmit,
   focusable,
+  defaultOpen,
 }: {
+  defaultOpen: boolean
   request: AccessRequest
   managerName: string
   onResubmit: (id: string) => void
   focusable: boolean
 }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
   const label = request.resource === 'production repo' ? 'Repo access' : request.resource
   const declined = request.status === 'declined'
   const reached = { waitingOnManager: 1, approved: 2, ready: 3, declined: 1 }[request.status]
