@@ -58,7 +58,8 @@ export function ChloePage() {
   const allSet = page.kind === 'allSetForStart'
   const request = activeRequest(state, hireId)
   // All-set screen: one small in-place panel at a time (completed list or tracker).
-  const [openPanel, setOpenPanel] = useState<'done' | 'request' | null>(null)
+  const [openPanel, setOpenPanel] = useState<'done' | null>(null)
+  const [trackerOpen, setTrackerOpen] = useState(false)
 
   // Editing a finished task happens in the card slot, one thing at a time.
   // Remembered for this tab, so a refresh mid-edit reopens the same card.
@@ -98,6 +99,11 @@ export function ChloePage() {
     window.requestAnimationFrame(() =>
       document.getElementById('task-slot')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
     )
+  }
+  // "Fix and resubmit" opens the request for editing; saving it sends it back to the manager.
+  const fixRequest = (requestId: string) => {
+    const req = state.requests.find((r) => r.id === requestId)
+    if (req) startEdit(req.taskId)
   }
   const saveEdit = (taskId: string, data: TaskData) => {
     actions.updateTaskData(taskId, data)
@@ -189,17 +195,17 @@ export function ChloePage() {
           <p className="mt-3 text-pretty text-[17px] leading-relaxed text-ink-soft sm:text-lg">
             <Subline page={page} minutes={minutes} startDay={startDay} started={state.today >= hire.startDate} />
           </p>
-          {allSet && request && (
+          {/* Only a declined request earns a line here, so it can't hide behind a tap. */}
+          {allSet && request?.status === 'declined' && (
             <button
               type="button"
-              onClick={() => setOpenPanel((p) => (p === 'request' ? null : 'request'))}
-              aria-expanded={openPanel === 'request'}
-              aria-controls="allset-request"
-              className="-ml-2.5 mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[14px] text-mist transition hover:bg-paper hover:text-ink"
+              onClick={() => {
+                setOpenPanel('done')
+                setTrackerOpen(true)
+              }}
+              className="-ml-2.5 mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-soft/70 px-3 py-1 text-[14px] text-amber transition hover:bg-amber-soft"
             >
-              <ClockIcon className="size-3.5" />
-              {requestLine(request.resource, request.status, hire.managerName)}
-              <ChevronIcon open={openPanel === 'request'} className="size-3" />
+              Your {request.resource.toLowerCase()} request needs a small change.
             </button>
           )}
         </div>
@@ -277,26 +283,45 @@ export function ChloePage() {
           <div className="expand" data-open={openPanel === 'done'} id="allset-done">
             <div>
               <ul className="mt-6 space-y-0.5 rounded-card bg-paper/70 p-2" aria-label="Finished before day 1">
-                {doneTasks.map((t) => (
-                  <li key={t.id} className="flex items-center gap-3 rounded-xl px-3 py-2 text-[14px]">
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-sage text-leaf">
-                      <CheckIcon className="size-3" />
-                    </span>
-                    <span className="text-ink-muted line-through decoration-ink-muted/40">{fill(t.title, copy)}</span>
-                  </li>
-                ))}
+                {doneTasks.map((t) => {
+                  // The request row carries its status, so she can see it went through.
+                  const req = allRequests.find((r) => r.taskId === t.id)
+                  return (
+                    <li key={t.id} className="rounded-xl px-3 py-2 text-[14px]">
+                      <div className="flex items-center gap-3">
+                        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-sage text-leaf">
+                          <CheckIcon className="size-3" />
+                        </span>
+                        <span className="flex-1 text-ink-muted line-through decoration-ink-muted/40">{fill(t.title, copy)}</span>
+                        {req && (
+                          <button
+                            type="button"
+                            onClick={() => setTrackerOpen((o) => !o)}
+                            aria-expanded={trackerOpen}
+                            aria-controls="allset-tracker"
+                            className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-medium transition ${STATUS_PILL[req.status].cls}`}
+                          >
+                            {req.status === 'ready' ? <CheckIcon className="size-3" /> : <ClockIcon className="size-3" />}
+                            {STATUS_PILL[req.status].label(hire.managerName)}
+                            <ChevronIcon open={trackerOpen} className="size-3" />
+                          </button>
+                        )}
+                      </div>
+                      {req && (
+                        <div className="expand" data-open={trackerOpen} id="allset-tracker">
+                          <div>
+                            <div className="mt-2 rounded-xl bg-mist-soft/60 px-3 pb-3 pt-1">
+                              <TrackerSteps request={req} managerName={hire.managerName} onResubmit={fixRequest} />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             </div>
           </div>
-          {request && (
-            <div className="expand" data-open={openPanel === 'request'} id="allset-request">
-              <div>
-                <div className="mt-6 rounded-card bg-mist-soft/60 px-4 pb-4 pt-1">
-                  <TrackerSteps request={request} managerName={hire.managerName} onResubmit={actions.resubmitRequest} />
-                </div>
-              </div>
-            </div>
-          )}
 
           <div id="task-slot" className="mt-10 scroll-mt-6 sm:mt-12">
             {editing ? editCard : <ComingUpCard data={comingUp(state, hireId)} copy={copy} />}
@@ -328,7 +353,7 @@ export function ChloePage() {
             onEdit={startEdit}
             editingId={editingId}
             spotlightRequestId={spotlightRequest}
-            onResubmit={actions.resubmitRequest}
+            onResubmit={fixRequest}
             startDay={startDay}
           />
         </div>
@@ -441,12 +466,13 @@ function UpNext({ titles }: { titles: string[] }) {
   )
 }
 
-/** One quiet line about an access request still in progress. */
-function requestLine(resource: string, status: string, manager: string): string {
-  if (status === 'approved') return `${resource} is approved. IT is setting it up.`
-  if (status === 'declined') return `${resource} needs a small change.`
-  return `${resource} is with ${manager}.`
-}
+/** Status pill on the request's row in the completed list. */
+const STATUS_PILL = {
+  waitingOnManager: { label: (m: string) => `With ${m}`, cls: 'bg-mist-soft text-mist' },
+  approved: { label: () => 'Approved', cls: 'bg-sage text-leaf-deep' },
+  ready: { label: () => 'Ready', cls: 'bg-sage text-leaf-deep' },
+  declined: { label: () => 'Needs a change', cls: 'bg-amber-soft text-amber' },
+} as const
 
 function StartMovedBanner({ hire, onDismiss }: { hire: Hire; onDismiss: () => void }) {
   return (
