@@ -118,20 +118,21 @@ export function ContactBody({ task, idPrefix, draftKey, submit, footer, mode, on
             {open(r.row) ? (
               <div className="animate-fade-up">{r.edit}</div>
             ) : (
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
+              <>
+                {/* Link sits on the label line so long values (emails) get the full width. */}
+                <div className="flex items-center justify-between gap-3">
                   <dt className="text-[13px] text-ink-muted">{r.label}</dt>
-                  <dd className="mt-0.5 break-words text-[16px] text-ink">{r.value}</dd>
-                  {r.extra && <dd className="text-[13px] text-ink-muted">{r.extra}</dd>}
+                  <button
+                    type="button"
+                    onClick={() => startEdit(r.row)}
+                    className="-mr-2.5 shrink-0 rounded-full px-2.5 py-0.5 text-[13px] text-leaf-deep underline decoration-leaf/30 underline-offset-4 transition hover:bg-paper"
+                  >
+                    Edit {r.row}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => startEdit(r.row)}
-                  className="shrink-0 rounded-full px-2.5 py-1 text-[13px] text-leaf-deep underline decoration-leaf/30 underline-offset-4 transition hover:bg-paper"
-                >
-                  Edit {r.row}
-                </button>
-              </div>
+                <dd className="mt-0.5 text-[16px] text-ink [overflow-wrap:anywhere]">{r.value}</dd>
+                {r.extra && <dd className="text-[13px] text-ink-muted">{r.extra}</dd>}
+              </>
             )}
           </div>
         ))}
