@@ -167,6 +167,7 @@ export function ChloePage() {
         overdue={null}
         managerName={hire.managerName}
         startDay={startDay}
+        onFile={hire.onFile}
         autoFocus
         onComplete={() => {}}
         onSaveEdit={saveEdit}
@@ -258,6 +259,7 @@ export function ChloePage() {
                 overdue={overdueLabel(hire, focus, state.today)}
                 managerName={hire.managerName}
                 startDay={startDay}
+                onFile={hire.onFile}
                 autoFocus={interacted.current}
                 onComplete={complete}
                 onToggleStep={actions.toggleStep}

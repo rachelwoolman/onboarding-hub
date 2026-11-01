@@ -37,12 +37,3 @@ export function email(v: string): string | null {
   if (!/^[^@]+@[^@]+\.[a-z]{2,}$/i.test(t)) return 'That email doesn’t look complete yet.'
   return null
 }
-
-export function githubUsername(v: string): string | null {
-  const t = v.trim().replace(/^@/, '')
-  if (!t) return 'Add your GitHub username so Mateo knows who to add.'
-  if (t.length > 39) return 'GitHub usernames are 39 characters or fewer.'
-  if (!/^[a-z\d](?:[a-z\d]|-(?=[a-z\d]))*$/i.test(t))
-    return 'Usernames use letters, numbers and single dashes, and don’t start or end with a dash.'
-  return null
-}

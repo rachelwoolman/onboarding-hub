@@ -40,6 +40,8 @@ export interface PortalHandoff {
   formName: string
   /** What to have on hand before opening it. */
   haveReady: string[]
+  /** Static, read-only rows shown in the portal panel (never real data). */
+  preview?: { label: string; value: string }[]
 }
 
 /** Values a task saved when it was completed (or edited). Always fake demo data. */

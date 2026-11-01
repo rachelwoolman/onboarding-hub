@@ -22,7 +22,9 @@ export function generatePlan(role: Role, startDate: ISODate, hireId: string): Pl
           ...t,
           steps: t.steps ? [...t.steps] : undefined,
           choices: t.choices ? t.choices.map((c) => ({ ...c })) : undefined,
-          portal: t.portal ? { ...t.portal, haveReady: [...t.portal.haveReady] } : undefined,
+          portal: t.portal
+            ? { ...t.portal, haveReady: [...t.portal.haveReady], preview: t.portal.preview?.map((r) => ({ ...r })) }
+            : undefined,
           id: `${hireId}:${t.key}`,
           hireId,
           phase: phase.id,

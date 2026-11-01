@@ -2,7 +2,7 @@ import { createElement, useEffect, useRef, useState } from 'react'
 import { clearDraft } from '../data/drafts'
 import { fill } from '../data/copy'
 import { taskSummary } from '../data/summaries'
-import type { Task, TaskData } from '../data/types'
+import type { Hire, Task, TaskData } from '../data/types'
 import { bodyFor } from './tasks/bodyFor'
 import { SimpleBody, type FooterOpts } from './tasks/TaskBodies'
 import { CheckIcon, Chip, ClockIcon, PrimaryButton } from './ui'
@@ -21,6 +21,7 @@ interface FocusCardProps {
   overdue: string | null
   managerName: string
   startDay?: string
+  onFile?: Hire['onFile']
   /** Move focus into the card when it appears (not on first page load). */
   autoFocus?: boolean
   onComplete: (taskId: string, data?: TaskData) => void
@@ -39,6 +40,7 @@ export function FocusCard({
   overdue,
   managerName,
   startDay = 'Monday',
+  onFile,
   autoFocus = false,
   onComplete,
   onSaveEdit,
@@ -187,6 +189,7 @@ export function FocusCard({
           mode,
           managerName,
           startDay,
+          onFile,
           idPrefix,
           draftKey,
           submit,

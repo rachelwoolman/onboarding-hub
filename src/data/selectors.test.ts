@@ -24,7 +24,7 @@ import {
   comingUp,
 } from './selectors'
 import { parseState } from './storage'
-import { email, githubUsername, phone } from './validation'
+import { email, phone } from './validation'
 import { taskSummary } from './summaries'
 import type { AppState } from './types'
 
@@ -245,11 +245,6 @@ describe('validation', () => {
     expect(email('chloe.example.com')).toBe('That email is missing an @.')
     expect(email('chloe@example')).toMatch(/complete/)
     expect(email('chloe@example.com')).toBeNull()
-  })
-  it('checks GitHub usernames', () => {
-    expect(githubUsername('chloe-z')).toBeNull()
-    expect(githubUsername('-chloe')).toMatch(/dash/)
-    expect(githubUsername('chloe--z')).toMatch(/dash/)
   })
 })
 

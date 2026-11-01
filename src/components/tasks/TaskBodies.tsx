@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
-import { email, githubUsername, phone, required } from '../../data/validation'
-import type { Task, TaskData } from '../../data/types'
-import { TextField } from '../forms/fields'
+import { email, formatPhone, phone, required } from '../../data/validation'
+import type { Hire, Task, TaskData } from '../../data/types'
+import { CheckboxGroup, TextField } from '../forms/fields'
 import { useTaskForm } from '../forms/useTaskForm'
 import { fill } from '../../data/copy'
 import { CheckIcon } from '../ui'
@@ -25,23 +25,31 @@ export interface BodyProps {
   submit: (data?: TaskData) => void
   footer: (opts: FooterOpts) => ReactNode
   onToggleStep: (taskId: string, step: number) => void
+  /** Contact details HR already has (confirm card). */
+  onFile?: Hire['onFile']
 }
 
 const str = (v: unknown, fallback = '') => (typeof v === 'string' ? v : fallback)
 
 // 1. Contact details ---------------------------------------------------------------
 
-export function ContactBody({ task, idPrefix, draftKey, submit, footer, mode }: BodyProps) {
+type Row = 'name' | 'phone' | 'email'
+
+/**
+ * HR already has her name, phone and personal email, so this is a confirmation:
+ * the details read-only, a small "Edit" link per row, and one Confirm button.
+ */
+export function ContactBody({ task, idPrefix, draftKey, submit, footer, mode, onFile }: BodyProps) {
   const saved = task.data ?? {}
   const f = useTaskForm({
     draftKey,
     idPrefix,
     initial: {
-      firstName: str(saved.firstName, 'Chloe'),
-      lastName: str(saved.lastName, 'Zhang'),
+      firstName: str(saved.firstName, onFile?.firstName ?? ''),
+      lastName: str(saved.lastName, onFile?.lastName ?? ''),
       preferredName: str(saved.preferredName),
-      phone: str(saved.phone),
-      email: str(saved.email),
+      phone: str(saved.phone, onFile?.phone ?? ''),
+      email: str(saved.email, onFile?.email ?? ''),
     },
     validate: (v) => ({
       firstName: required('We need your legal first name.')(v.firstName),
@@ -50,9 +58,19 @@ export function ContactBody({ task, idPrefix, draftKey, submit, footer, mode }: 
       email: email(v.email),
     }),
   })
-  // The name is already known, so it's a quick "is this right?" with a way to change it.
-  const [editName, setEditName] = useState(false)
-  const nameOpen = editName || Boolean(f.error('firstName') || f.error('lastName'))
+  // Rows open for editing: anything she chose to edit, anything HR doesn't have,
+  // and anything that needs a fix after she pressed Confirm.
+  const [editing, setEditing] = useState<Set<Row>>(
+    () => new Set<Row>([...(!f.values.firstName || !f.values.lastName ? ['name' as Row] : []), ...(!f.values.phone ? ['phone' as Row] : []), ...(!f.values.email ? ['email' as Row] : [])]),
+  )
+  const open = (row: Row) =>
+    editing.has(row) ||
+    (row === 'name' ? Boolean(f.error('firstName') || f.error('lastName')) : Boolean(f.error(row)))
+  const startEdit = (row: Row) => {
+    setEditing((s) => new Set(s).add(row))
+    const first = row === 'name' ? 'firstName' : row
+    window.requestAnimationFrame(() => document.getElementById(f.id(first))?.focus())
+  }
   const bind = (name: keyof typeof f.values) => ({
     id: f.id(name),
     value: f.values[name],
@@ -60,42 +78,64 @@ export function ContactBody({ task, idPrefix, draftKey, submit, footer, mode }: 
     onBlur: () => f.touch(name),
     error: f.error(name),
   })
-  const fullName = `${f.values.firstName} ${f.values.lastName}`.trim()
+  const preferred = f.values.preferredName.trim()
+
+  const rows: { row: Row; label: string; value: string; extra?: string; edit: ReactNode }[] = [
+    {
+      row: 'name',
+      label: 'Name',
+      value: `${f.values.firstName} ${f.values.lastName}`.trim(),
+      extra: preferred ? `Goes by ${preferred}` : undefined,
+      edit: (
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <TextField label="Legal first name" autoComplete="given-name" {...bind('firstName')} />
+            <TextField label="Legal last name" autoComplete="family-name" {...bind('lastName')} />
+          </div>
+          <TextField label="Preferred name" optional hint="What should we call you?" autoComplete="nickname" {...bind('preferredName')} />
+        </div>
+      ),
+    },
+    {
+      row: 'phone',
+      label: 'Mobile phone',
+      value: formatPhone(f.values.phone),
+      edit: <TextField label="Mobile phone" type="tel" inputMode="tel" autoComplete="tel" {...bind('phone')} />,
+    },
+    {
+      row: 'email',
+      label: 'Personal email',
+      value: f.values.email.trim(),
+      edit: <TextField label="Personal email" type="email" inputMode="email" autoComplete="email" {...bind('email')} />,
+    },
+  ]
+
   return (
     <form noValidate onSubmit={f.handleSubmit((v) => submit({ ...v, phone: v.phone.trim(), email: v.email.trim() }))}>
-      <div className="space-y-5">
-        {nameOpen ? (
-          <div className="space-y-5 rounded-2xl bg-cream/50 p-4 animate-fade-up">
-            <div className="grid gap-5 sm:grid-cols-2">
-              <TextField label="Legal first name" autoComplete="given-name" {...bind('firstName')} />
-              <TextField label="Legal last name" autoComplete="family-name" {...bind('lastName')} />
-            </div>
-            <TextField label="Preferred name" optional hint="What should we call you?" autoComplete="nickname" {...bind('preferredName')} />
+      <dl className="divide-y divide-line/70 rounded-2xl bg-cream/60 px-4">
+        {rows.map((r) => (
+          <div key={r.row} className="py-3.5 text-left">
+            {open(r.row) ? (
+              <div className="animate-fade-up">{r.edit}</div>
+            ) : (
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <dt className="text-[13px] text-ink-muted">{r.label}</dt>
+                  <dd className="mt-0.5 break-words text-[16px] text-ink">{r.value}</dd>
+                  {r.extra && <dd className="text-[13px] text-ink-muted">{r.extra}</dd>}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => startEdit(r.row)}
+                  className="shrink-0 rounded-full px-2.5 py-1 text-[13px] text-leaf-deep underline decoration-leaf/30 underline-offset-4 transition hover:bg-paper"
+                >
+                  Edit {r.row}
+                </button>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="flex items-center justify-between gap-3 rounded-2xl bg-sage/60 px-5 py-4">
-            <div className="min-w-0 text-left">
-              <p className="text-[13px] font-medium text-leaf-deep">Is this right?</p>
-              <p className="mt-0.5 truncate text-[18px] font-semibold text-ink">{fullName || 'Add your name'}</p>
-              {f.values.preferredName.trim() && (
-                <p className="text-[13px] text-ink-muted">Goes by {f.values.preferredName.trim()}</p>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setEditName(true)
-                window.requestAnimationFrame(() => document.getElementById(f.id('firstName'))?.focus())
-              }}
-              className="shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium text-leaf-deep underline decoration-leaf/30 underline-offset-4 transition hover:bg-paper"
-            >
-              Edit name
-            </button>
-          </div>
-        )}
-        <TextField label="Mobile phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="(555) 010-1234" {...bind('phone')} />
-        <TextField label="Personal email" type="email" inputMode="email" autoComplete="email" placeholder="chloe@example.com" {...bind('email')} />
-      </div>
+        ))}
+      </dl>
       {footer({ label: mode === 'edit' ? 'Save changes' : 'Confirm' })}
     </form>
   )
@@ -134,13 +174,14 @@ export function StepsBody({ task, submit, footer, onToggleStep, idPrefix, startD
                   />
                   <span
                     aria-hidden="true"
-                    className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold transition duration-300 peer-focus-visible:ring-2 peer-focus-visible:ring-leaf peer-focus-visible:ring-offset-2 ${
-                      checked ? 'bg-leaf text-paper' : 'bg-paper text-ink-muted ring-1 ring-sage-deep'
+                    className={`flex size-5 shrink-0 items-center justify-center rounded-md transition duration-300 peer-focus-visible:ring-2 peer-focus-visible:ring-leaf peer-focus-visible:ring-offset-2 ${
+                      checked ? 'bg-ink-muted/60 text-paper' : 'bg-paper ring-1 ring-sage-deep'
                     }`}
                   >
-                    {checked ? <CheckIcon className="size-3.5" /> : i + 1}
+                    {checked && <CheckIcon className="size-3.5" />}
                   </span>
-                  <span className={checked ? 'text-ink-muted line-through decoration-ink-muted/40' : 'text-ink'}>{label}</span>
+                  {/* Done steps go quiet grey, never struck through. */}
+                  <span className={`transition-colors duration-300 ${checked ? 'text-ink-muted' : 'text-ink'}`}>{label}</span>
                 </label>
               </li>
             )
@@ -158,36 +199,28 @@ export function StepsBody({ task, submit, footer, onToggleStep, idPrefix, startD
 
 // 6. Access request ------------------------------------------------------------------------
 
-/** Code access: just the GitHub username; the manager approves. Other requests need nothing typed. */
+/** "Request your dev tools": tick what she needs, one request goes to the manager. */
 export function RequestBody({ task, idPrefix, draftKey, submit, footer, mode, managerName }: BodyProps) {
   const saved = task.data ?? {}
-  const needsGithub = task.key === 'code-access'
+  const choices = task.choices ?? []
   const f = useTaskForm({
     draftKey,
     idPrefix,
-    initial: { githubUsername: str(saved.githubUsername) },
-    validate: (v) => ({ githubUsername: needsGithub ? githubUsername(v.githubUsername) : null }),
+    // Nothing pre-ticked: she picks what she actually needs.
+    initial: { tools: Array.isArray(saved.tools) ? saved.tools : ([] as string[]) },
+    validate: (v) => ({ tools: choices.length && v.tools.length === 0 ? 'Pick at least one tool.' : null }),
   })
   return (
-    <form
-      noValidate
-      onSubmit={f.handleSubmit((v) =>
-        submit(needsGithub ? { githubUsername: v.githubUsername.trim().replace(/^@/, '') } : { requested: true }),
-      )}
-    >
-      {needsGithub && (
-        <TextField
-          id={f.id('githubUsername')}
-          label="GitHub username"
-          prefix="@"
-          autoComplete="username"
-          autoCapitalize="none"
-          spellCheck={false}
-          placeholder="chloe-zhang"
-          value={f.values.githubUsername}
-          onChange={(v) => f.set('githubUsername', v)}
-          onBlur={() => f.touch('githubUsername')}
-          error={f.error('githubUsername')}
+    <form noValidate onSubmit={f.handleSubmit((v) => submit({ tools: v.tools }))}>
+      {choices.length > 0 && (
+        <CheckboxGroup
+          id={f.id('tools')}
+          legend="What do you need?"
+          options={choices}
+          value={f.values.tools}
+          onChange={(v) => f.set('tools', v)}
+          onBlur={() => f.touch('tools')}
+          error={f.error('tools')}
         />
       )}
       {footer({ label: mode === 'edit' ? 'Update request' : `Send to ${managerName}` })}

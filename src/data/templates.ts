@@ -85,6 +85,12 @@ const i9w4: TaskTemplate = {
   portal: {
     formName: 'Form I-9 and W-4',
     haveReady: ['Your home address', 'Your Social Security number', 'Your filing status and number of dependents'],
+    preview: [
+      { label: 'Home address', value: 'Entered in portal' },
+      { label: 'Social Security number', value: '•••-••-••••' },
+      { label: 'Filing status', value: 'Chosen in portal' },
+      { label: 'Dependents', value: 'Chosen in portal' },
+    ],
   },
   minutes: 15,
   dueOffset: -1,
