@@ -26,11 +26,11 @@ export interface Hire {
 
 /**
  * How a task is done in place:
- * form (fill and submit), steps (check every step), read (scroll to the end),
+ * form (fill and submit), steps (confirm every step),
  * request (ask someone for access), handoff (finish it in a secure external
  * portal, then confirm). Undefined means a plain "Mark done".
  */
-export type TaskKind = 'form' | 'steps' | 'read' | 'request' | 'handoff'
+export type TaskKind = 'form' | 'steps' | 'request' | 'handoff'
 
 /** A task finished in a secure provider (HR portal), never inside this app. */
 export interface PortalHandoff {
@@ -46,6 +46,11 @@ export type TaskData = Record<string, string | string[] | number | boolean>
 export interface Task {
   id: string
   kind?: TaskKind
+  /**
+   * Done outside this page before it existed (offer letter, background check).
+   * Counts toward "2 of 7 done" but isn't work left in a stop.
+   */
+  external?: boolean
   hireId: string
   /** Stable template key, e.g. "confirm-details". */
   key: string

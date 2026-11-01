@@ -7,6 +7,8 @@ import type { Owner, PhaseId, PortalHandoff, Role, TaskKind } from './types'
 
 export interface TaskTemplate {
   key: string
+  /** Done outside this page before it existed (e.g. signed with the offer). */
+  external?: boolean
   kind?: TaskKind
   portal?: PortalHandoff
   title: string
@@ -64,6 +66,7 @@ const confirmDetails: TaskTemplate = {
 
 const offerLetter: TaskTemplate = {
   key: 'offer-letter',
+  external: true,
   title: 'Sign your offer letter',
   short: 'Offer letter',
   why: 'Makes it official.',
@@ -73,6 +76,7 @@ const offerLetter: TaskTemplate = {
 
 const backgroundCheck: TaskTemplate = {
   key: 'background-check',
+  external: true,
   title: 'Consent to background check',
   short: 'Background check',
   why: 'A standard step for everyone who joins.',
@@ -95,34 +99,30 @@ const i9w4: TaskTemplate = {
   dueOffset: -1,
 }
 
-const directDeposit: TaskTemplate = {
-  key: 'direct-deposit',
-  kind: 'handoff',
-  title: 'Set up direct deposit',
-  short: 'Direct deposit',
-  why: 'Tells payroll where to send your first paycheck.',
-  portal: {
-    formName: 'Direct deposit',
-    haveReady: ['Your bank’s name', 'Bank routing and account number'],
-  },
-  minutes: 5,
+/**
+ * Four one-line confirmations instead of an article to read.
+ * `{day}` and `{manager}` are filled in when shown, so they follow a moved start date.
+ */
+const mondayCheck: TaskTemplate = {
+  key: 'monday-check',
+  kind: 'steps',
+  title: 'Your {day} sanity check',
+  short: '{day} check',
+  why: 'Four quick things so {day} morning is easy.',
+  minutes: 1,
   dueOffset: -1,
-}
-
-const welcomeGuide: TaskTemplate = {
-  key: 'welcome-guide',
-  kind: 'read',
-  title: 'Read your day-1 welcome guide',
-  short: 'Welcome guide',
-  why: 'Where to go, who to ask for, and what Monday looks like.',
-  minutes: 5,
-  dueOffset: -1,
+  steps: [
+    'Arrive 9:15 at 240 Fern Street, 4th floor',
+    '{manager} meets you at the front desk at 9:30',
+    'Pick up your badge and laptop there (bring ID)',
+    'Free visitor parking on Alder Lane',
+  ],
 }
 
 function slackInvite(teamChannel: string): TaskTemplate {
   return {
     key: 'slack-invite',
-  kind: 'steps',
+    kind: 'steps',
     title: 'Accept your Slack invite',
     short: 'Slack invite',
     why: 'Your team says hi here first.',
@@ -177,7 +177,7 @@ const day1Common = {
     title: 'Complete security training',
     short: 'Security training',
     why: 'Keeps you and our customers’ health data safe.',
-    minutes: 25,
+    minutes: 20,
     dueOffset: 0,
   },
 } satisfies Record<string, TaskTemplate>
@@ -212,12 +212,12 @@ const engineering: RoleTemplate = {
       opensOn: -Infinity,
       stops: [
         { name: 'Quick start', tasks: [confirmDetails] },
-        { name: 'Paperwork', tasks: [offerLetter, backgroundCheck, i9w4, directDeposit] },
+        { name: 'Paperwork', tasks: [offerLetter, backgroundCheck, i9w4] },
         {
           name: 'Get connected',
           tasks: [
             slackInvite('engineering'),
-            welcomeGuide,
+            mondayCheck,
             {
               key: 'repo-access',
   kind: 'request',
@@ -350,11 +350,12 @@ const design: RoleTemplate = {
       opensOn: -Infinity,
       stops: [
         { name: 'Quick start', tasks: [confirmDetails] },
-        { name: 'Paperwork', tasks: [offerLetter, i9w4, directDeposit] },
+        { name: 'Paperwork', tasks: [offerLetter, i9w4] },
         {
           name: 'Get connected',
           tasks: [
             slackInvite('design'),
+            mondayCheck,
             {
               key: 'figma-access',
   kind: 'request',

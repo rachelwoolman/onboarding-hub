@@ -57,10 +57,10 @@ export function createSeed(realToday: ISODate = toISODate(new Date())): AppState
     }
   }
 
-  // Chloe: 2 of 8 pre-start tasks done.
+  // Chloe: 2 of 7 pre-start tasks done (both signed before this page existed).
   markDone('chloe', ['offer-letter', 'background-check'])
 
-  // Priya: all of pre-start and day 1, plus her GitHub request (13 of 21 = 62%).
+  // Priya: all of pre-start and day 1, plus her GitHub request (12 of 20 = 60%).
   const priyaDone = tasks
     .filter((t) => t.hireId === 'priya' && (t.phase === 'preStart' || t.phase === 'day1'))
     .map((t) => t.key)

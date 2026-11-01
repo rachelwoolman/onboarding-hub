@@ -126,7 +126,9 @@ export function getUpNext(state: AppState, hireId: string): Task[] {
 export interface StopSummary {
   index: number
   name: string
+  /** Tasks she does in this stop on this page (not ones signed before it existed). */
   total: number
+  /** Of those, how many are still open (deferred ones included). */
   remaining: number
   minutesLeft: number
   done: boolean
@@ -141,7 +143,9 @@ export function getStops(state: AppState, hireId: string): StopSummary[] {
   const tasks = phaseTasks(state, hireId, phase)
   const current = getCurrentStop(state, hireId)
   return tpl.stops.map((s, index) => {
-    const inStop = tasks.filter((t) => t.stop === index)
+    // "X of Y left in this stop" is about her work here, so tasks done before
+    // this page existed (offer letter, background check) aren't counted.
+    const inStop = tasks.filter((t) => t.stop === index && !t.external)
     const open = inStop.filter((t) => !isDone(t))
     return {
       index,
@@ -166,7 +170,7 @@ export function minutesLeft(state: AppState, hireId: string): number {
   return remainingInPhase(state, hireId).reduce((m, t) => m + t.minutes, 0)
 }
 
-/** "2 of 8 done" for the phase on screen. */
+/** "2 of 7 done" for the phase on screen. */
 export function phaseCounts(state: AppState, hireId: string): { done: number; total: number } {
   const phase = getCurrentPhase(state, hireId)
   if (!phase) return { done: 0, total: 0 }

@@ -45,7 +45,7 @@ function completeKeys(state: AppState, hireId: string, keys: string[]): AppState
   }, state)
 }
 
-const PRE_START_OPEN = ['confirm-details', 'i9-w4', 'direct-deposit', 'slack-invite', 'welcome-guide', 'repo-access']
+const PRE_START_OPEN = ['confirm-details', 'i9-w4', 'slack-invite', 'monday-check', 'repo-access']
 
 describe('dates', () => {
   it('does whole-day math across month ends and DST', () => {
@@ -76,11 +76,11 @@ describe('seed', () => {
 })
 
 describe('Chloe before day 1', () => {
-  it('shows 2 of 8 done, 35 minutes, 25%, sprout', () => {
+  it('shows 2 of 7 done, 26 minutes, 29%, sprout', () => {
     const s = seed()
-    expect(phaseCounts(s, C)).toEqual({ done: 2, total: 8 })
-    expect(minutesLeft(s, C)).toBe(35)
-    expect(progressPercent(s, C)).toBe(25)
+    expect(phaseCounts(s, C)).toEqual({ done: 2, total: 7 })
+    expect(minutesLeft(s, C)).toBe(26)
+    expect(progressPercent(s, C)).toBe(29)
     expect(plantStage(s, C)).toBe('sprout')
   })
 
@@ -89,10 +89,10 @@ describe('Chloe before day 1', () => {
     expect(getFocusTask(s, C)?.key).toBe('confirm-details')
     expect(getCurrentStop(s, C)).toBe(0)
     s = completeKeys(s, C, ['confirm-details'])
-    expect(minutesLeft(s, C)).toBe(33)
+    expect(minutesLeft(s, C)).toBe(24)
     expect(getFocusTask(s, C)?.key).toBe('i9-w4')
     expect(getCurrentStop(s, C)).toBe(1)
-    s = completeKeys(s, C, ['i9-w4', 'direct-deposit'])
+    s = completeKeys(s, C, ['i9-w4'])
     expect(getFocusTask(s, C)?.key).toBe('slack-invite')
   })
 
@@ -100,8 +100,8 @@ describe('Chloe before day 1', () => {
     const stops = getStops(seed(), C)
     expect(stops.map((x) => [x.name, x.minutesLeft])).toEqual([
       ['Quick start', 2],
-      ['Paperwork', 20],
-      ['Get connected', 13],
+      ['Paperwork', 15],
+      ['Get connected', 9],
     ])
     expect(stops[0].current).toBe(true)
   })
@@ -111,8 +111,8 @@ describe('Chloe before day 1', () => {
     expect(stageForPercent(1)).toBe('sprout')
     expect(stageForPercent(60)).toBe('leafy')
     expect(stageForPercent(100)).toBe('bloom')
-    const s = completeKeys(seed(), C, ['confirm-details', 'i9-w4', 'direct-deposit'])
-    expect(plantStage(s, C)).toBe('leafy') // 5 of 8
+    const s = completeKeys(seed(), C, ['confirm-details', 'i9-w4', 'slack-invite'])
+    expect(plantStage(s, C)).toBe('leafy') // 5 of 7
   })
 
   it('is all set for Monday once every pre-start task is done', () => {
@@ -203,7 +203,7 @@ describe('later phases', () => {
 describe('manager view data', () => {
   it('matches the garden story', () => {
     const s = seed()
-    expect(progressPercent(s, 'priya')).toBe(62)
+    expect(progressPercent(s, 'priya')).toBe(60)
     expect(hireStatus(s, 'priya')).toBe('blocked')
     expect(waitingFor(s, 'priya')[0].daysWaiting).toBe(3)
     expect(progressPercent(s, 'jordan')).toBe(0)
@@ -216,7 +216,8 @@ describe('generatePlan', () => {
   it('builds different plans per role and copes with an empty plan', () => {
     const eng = generatePlan('Engineering', '2026-11-02', 'a')
     const des = generatePlan('Design', '2026-11-02', 'b')
-    expect(eng.tasks.length).toBe(21)
+    expect(eng.tasks.length).toBe(20)
+    expect(eng.tasks.some((t) => t.key === 'direct-deposit')).toBe(false)
     expect(des.tasks.length).toBeLessThan(eng.tasks.length)
     expect(des.tasks.some((t) => t.key === 'figma-access')).toBe(true)
 
@@ -274,11 +275,9 @@ describe('doing tasks', () => {
 
   it('hands sensitive paperwork off to the HR portal instead of collecting it', () => {
     const s = seed()
-    for (const key of ['i9-w4', 'direct-deposit']) {
-      const t = s.tasks.find((x) => x.hireId === C && x.key === key)!
-      expect(t.kind).toBe('handoff')
-      expect(t.portal?.haveReady.length).toBeGreaterThan(0)
-    }
+    const handoff = s.tasks.find((x) => x.hireId === C && x.key === 'i9-w4')!
+    expect(handoff.kind).toBe('handoff')
+    expect(handoff.portal?.haveReady.length).toBeGreaterThan(0)
     const id = `${C}:i9-w4`
     let done = reducer(s, { type: 'completeTask', taskId: id, data: { finishedAt: '2026-11-06T18:00:00Z' } })
     expect(taskSummary(done.tasks.find((t) => t.id === id)!)).toBe('Finished in the secure HR portal')
@@ -299,11 +298,26 @@ describe('doing tasks', () => {
   })
 
   it('"I\'ll do this later" sends a task to the back of the queue', () => {
-    let s = completeKeys(seed(), C, ['confirm-details', 'i9-w4'])
-    expect(getFocusTask(s, C)?.key).toBe('direct-deposit')
-    s = reducer(s, { type: 'deferTask', taskId: `${C}:direct-deposit` })
+    let s = completeKeys(seed(), C, ['confirm-details'])
+    expect(getFocusTask(s, C)?.key).toBe('i9-w4')
+    s = reducer(s, { type: 'deferTask', taskId: `${C}:i9-w4` })
     expect(getFocusTask(s, C)?.key).toBe('slack-invite')
-    s = completeKeys(s, C, ['slack-invite', 'welcome-guide', 'repo-access'])
-    expect(getFocusTask(s, C)?.key).toBe('direct-deposit')
+    // Deferring never changes a stop's own count.
+    expect(getStops(s, C).map((x) => [x.remaining, x.total])).toEqual([[0, 1], [1, 1], [3, 3]])
+    s = completeKeys(s, C, ['slack-invite', 'monday-check', 'repo-access'])
+    expect(getFocusTask(s, C)?.key).toBe('i9-w4')
+  })
+
+  it('counts only the work left in each stop, not tasks signed before the page', () => {
+    let s = seed()
+    expect(getStops(s, C).map((x) => [x.name, x.remaining, x.total])).toEqual([
+      ['Quick start', 1, 1],
+      ['Paperwork', 1, 1],
+      ['Get connected', 3, 3],
+    ])
+    s = completeKeys(s, C, ['confirm-details', 'i9-w4', 'slack-invite'])
+    expect(getStops(s, C)[2]).toMatchObject({ remaining: 2, total: 3, current: true })
+    // Phase totals still include the two signed tasks.
+    expect(phaseCounts(s, C)).toEqual({ done: 5, total: 7 })
   })
 })
