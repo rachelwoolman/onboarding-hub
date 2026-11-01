@@ -16,10 +16,8 @@ export function taskSummary(task: Task): string | null {
       const name = str(d.preferredName) || `${str(d.firstName)} ${str(d.lastName)}`.trim()
       return [name, formatPhone(str(d.phone))].filter(Boolean).join(' · ')
     }
-    case 'repo-access': {
-      const repos = Array.isArray(d.repos) ? d.repos.length : 0
-      return `@${str(d.githubUsername)} · ${repos} repo${repos === 1 ? '' : 's'}`
-    }
+    case 'code-access':
+      return str(d.githubUsername) ? `GitHub @${str(d.githubUsername)}` : null
     default:
       return null
   }

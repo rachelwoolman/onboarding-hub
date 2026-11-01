@@ -1,5 +1,5 @@
 import { addDays, daysBetween, dayLabel, weekday } from './dates'
-import { PHASE_ORDER, phaseTemplate } from './templates'
+import { PHASE_ORDER, phaseTemplate, type AgendaItem } from './templates'
 import type {
   AccessRequest,
   AppState,
@@ -319,4 +319,31 @@ export function needsAttention(state: AppState): AttentionItem[] {
       items.push({ kind: 'notStarted', hireId: hire.id })
   }
   return items
+}
+
+// Coming up (all-set screen) --------------------------------------------------------
+
+export interface ComingUp {
+  /** Day 1 itinerary from the role template (timed lines, not tasks). */
+  monday: { items: AgendaItem[]; footnote?: string }
+  /** Read-only previews of the hire's own generated plan. */
+  week1: Task[]
+  month1: Task[]
+}
+
+/** What's ahead, read-only. Comes from the role template and generated plan, so roles differ. */
+export function comingUp(state: AppState, hireId: string): ComingUp {
+  const hire = getHire(state, hireId)
+  if (!hire) return { monday: { items: [] }, week1: [], month1: [] }
+  const byOrder = (a: Task, b: Task) => a.order - b.order
+  return {
+    monday: phaseTemplate(hire.role, 'day1').agenda ?? { items: [] },
+    week1: phaseTasks(state, hireId, 'week1').sort(byOrder),
+    month1: phaseTasks(state, hireId, 'month1').sort(byOrder),
+  }
+}
+
+/** The access request still in progress (hidden once it's ready). */
+export function activeRequest(state: AppState, hireId: string): AccessRequest | null {
+  return state.requests.find((r) => r.hireId === hireId && r.status !== 'ready') ?? null
 }

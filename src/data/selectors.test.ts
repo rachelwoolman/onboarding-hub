@@ -19,6 +19,8 @@ import {
   stageForPercent,
   taskDue,
   waitingFor,
+  activeRequest,
+  comingUp,
 } from './selectors'
 import { parseState } from './storage'
 import { email, githubUsername, phone } from './validation'
@@ -45,7 +47,7 @@ function completeKeys(state: AppState, hireId: string, keys: string[]): AppState
   }, state)
 }
 
-const PRE_START_OPEN = ['confirm-details', 'i9-w4', 'slack-invite', 'monday-check', 'repo-access']
+const PRE_START_OPEN = ['confirm-details', 'i9-w4', 'slack-invite', 'code-access']
 
 describe('dates', () => {
   it('does whole-day math across month ends and DST', () => {
@@ -76,11 +78,11 @@ describe('seed', () => {
 })
 
 describe('Chloe before day 1', () => {
-  it('shows 2 of 7 done, 26 minutes, 29%, sprout', () => {
+  it('shows 2 of 6 done, 25 minutes, 33%, sprout', () => {
     const s = seed()
-    expect(phaseCounts(s, C)).toEqual({ done: 2, total: 7 })
-    expect(minutesLeft(s, C)).toBe(26)
-    expect(progressPercent(s, C)).toBe(29)
+    expect(phaseCounts(s, C)).toEqual({ done: 2, total: 6 })
+    expect(minutesLeft(s, C)).toBe(25)
+    expect(progressPercent(s, C)).toBe(33)
     expect(plantStage(s, C)).toBe('sprout')
   })
 
@@ -89,7 +91,7 @@ describe('Chloe before day 1', () => {
     expect(getFocusTask(s, C)?.key).toBe('confirm-details')
     expect(getCurrentStop(s, C)).toBe(0)
     s = completeKeys(s, C, ['confirm-details'])
-    expect(minutesLeft(s, C)).toBe(24)
+    expect(minutesLeft(s, C)).toBe(23)
     expect(getFocusTask(s, C)?.key).toBe('i9-w4')
     expect(getCurrentStop(s, C)).toBe(1)
     s = completeKeys(s, C, ['i9-w4'])
@@ -101,7 +103,7 @@ describe('Chloe before day 1', () => {
     expect(stops.map((x) => [x.name, x.minutesLeft])).toEqual([
       ['Quick start', 2],
       ['Paperwork', 15],
-      ['Get connected', 9],
+      ['Get connected', 8],
     ])
     expect(stops[0].current).toBe(true)
   })
@@ -111,8 +113,8 @@ describe('Chloe before day 1', () => {
     expect(stageForPercent(1)).toBe('sprout')
     expect(stageForPercent(60)).toBe('leafy')
     expect(stageForPercent(100)).toBe('bloom')
-    const s = completeKeys(seed(), C, ['confirm-details', 'i9-w4', 'slack-invite'])
-    expect(plantStage(s, C)).toBe('leafy') // 5 of 7
+    const s = completeKeys(seed(), C, ['confirm-details', 'i9-w4'])
+    expect(plantStage(s, C)).toBe('leafy') // 4 of 6
   })
 
   it('is all set for Monday once every pre-start task is done', () => {
@@ -133,7 +135,7 @@ describe('Chloe before day 1', () => {
 describe('reducer safety', () => {
   it('ignores double completes and keeps one access request', () => {
     let s = seed()
-    s = completeKeys(s, C, ['repo-access', 'repo-access'])
+    s = completeKeys(s, C, ['code-access', 'code-access'])
     expect(s.requests).toHaveLength(1)
     expect(s.requests[0].status).toBe('waitingOnManager')
     expect(hireStatus(s, C)).toBe('needsApproval')
@@ -141,7 +143,7 @@ describe('reducer safety', () => {
   })
 
   it('runs the approval flow, including decline and resubmit', () => {
-    let s = completeKeys(seed(), C, ['repo-access'])
+    let s = completeKeys(seed(), C, ['code-access'])
     const id = s.requests[0].id
     s = reducer(s, { type: 'declineRequest', requestId: id, note: 'Use your work email' })
     expect(s.requests[0]).toMatchObject({ status: 'declined', note: 'Use your work email' })
@@ -154,8 +156,8 @@ describe('reducer safety', () => {
   })
 
   it('undo withdraws a pending request', () => {
-    let s = completeKeys(seed(), C, ['repo-access'])
-    s = reducer(s, { type: 'undoTask', taskId: `${C}:repo-access` })
+    let s = completeKeys(seed(), C, ['code-access'])
+    s = reducer(s, { type: 'undoTask', taskId: `${C}:code-access` })
     expect(s.requests).toHaveLength(0)
     expect(phaseCounts(s, C).done).toBe(2)
   })
@@ -203,7 +205,7 @@ describe('later phases', () => {
 describe('manager view data', () => {
   it('matches the garden story', () => {
     const s = seed()
-    expect(progressPercent(s, 'priya')).toBe(60)
+    expect(progressPercent(s, 'priya')).toBe(56)
     expect(hireStatus(s, 'priya')).toBe('blocked')
     expect(waitingFor(s, 'priya')[0].daysWaiting).toBe(3)
     expect(progressPercent(s, 'jordan')).toBe(0)
@@ -216,7 +218,8 @@ describe('generatePlan', () => {
   it('builds different plans per role and copes with an empty plan', () => {
     const eng = generatePlan('Engineering', '2026-11-02', 'a')
     const des = generatePlan('Design', '2026-11-02', 'b')
-    expect(eng.tasks.length).toBe(20)
+    expect(eng.tasks.length).toBe(18)
+    expect(eng.tasks.some((t) => t.key === 'monday-check')).toBe(false)
     expect(eng.tasks.some((t) => t.key === 'direct-deposit')).toBe(false)
     expect(des.tasks.length).toBeLessThan(eng.tasks.length)
     expect(des.tasks.some((t) => t.key === 'figma-access')).toBe(true)
@@ -288,13 +291,17 @@ describe('doing tasks', () => {
   })
 
   it('carries request details and resends a declined request when edited', () => {
-    const id = `${C}:repo-access`
-    let s = reducer(seed(), { type: 'completeTask', taskId: id, data: { githubUsername: 'chloe-z', repos: ['care-api'] } })
-    expect(s.requests[0].details).toMatchObject({ githubUsername: 'chloe-z' })
-    s = reducer(s, { type: 'declineRequest', requestId: s.requests[0].id, note: 'Add patient-web too' })
-    s = reducer(s, { type: 'updateTaskData', taskId: id, data: { githubUsername: 'chloe-z', repos: ['care-api', 'patient-web'] } })
+    const id = `${C}:code-access`
+    let s = reducer(seed(), { type: 'completeTask', taskId: id, data: { githubUsername: 'chloe-z' } })
+    expect(s.requests[0]).toMatchObject({ resource: 'Code access', details: { githubUsername: 'chloe-z' } })
+    expect(activeRequest(s, C)?.status).toBe('waitingOnManager')
+    s = reducer(s, { type: 'declineRequest', requestId: s.requests[0].id, note: 'That username has a typo' })
+    s = reducer(s, { type: 'updateTaskData', taskId: id, data: { githubUsername: 'chloe-zhang' } })
     expect(s.requests[0].status).toBe('waitingOnManager')
-    expect(s.requests[0].details?.repos).toHaveLength(2)
+    expect(s.requests[0].details?.githubUsername).toBe('chloe-zhang')
+    s = reducer(s, { type: 'approveRequest', requestId: s.requests[0].id })
+    s = reducer(s, { type: 'markRequestReady', requestId: s.requests[0].id })
+    expect(activeRequest(s, C)).toBeNull()
   })
 
   it('"I\'ll do this later" sends a task to the back of the queue', () => {
@@ -303,8 +310,8 @@ describe('doing tasks', () => {
     s = reducer(s, { type: 'deferTask', taskId: `${C}:i9-w4` })
     expect(getFocusTask(s, C)?.key).toBe('slack-invite')
     // Deferring never changes a stop's own count.
-    expect(getStops(s, C).map((x) => [x.remaining, x.total])).toEqual([[0, 1], [1, 1], [3, 3]])
-    s = completeKeys(s, C, ['slack-invite', 'monday-check', 'repo-access'])
+    expect(getStops(s, C).map((x) => [x.remaining, x.total])).toEqual([[0, 1], [1, 1], [2, 2]])
+    s = completeKeys(s, C, ['slack-invite', 'code-access'])
     expect(getFocusTask(s, C)?.key).toBe('i9-w4')
   })
 
@@ -313,11 +320,44 @@ describe('doing tasks', () => {
     expect(getStops(s, C).map((x) => [x.name, x.remaining, x.total])).toEqual([
       ['Quick start', 1, 1],
       ['Paperwork', 1, 1],
-      ['Get connected', 3, 3],
+      ['Get connected', 2, 2],
     ])
     s = completeKeys(s, C, ['confirm-details', 'i9-w4', 'slack-invite'])
-    expect(getStops(s, C)[2]).toMatchObject({ remaining: 2, total: 3, current: true })
+    expect(getStops(s, C)[2]).toMatchObject({ remaining: 1, total: 2, current: true })
     // Phase totals still include the two signed tasks.
-    expect(phaseCounts(s, C)).toEqual({ done: 5, total: 7 })
+    expect(phaseCounts(s, C)).toEqual({ done: 5, total: 6 })
+  })
+})
+
+describe('coming up', () => {
+  it('previews Monday, Week 1 and the first month from the plan, per role', () => {
+    const s = seed()
+    const eng = comingUp(s, C)
+    expect(eng.monday.items.map((i) => i.time)).toEqual(['9:15', '9:30', '10:00', '10:30', '11:00', '12:30'])
+    expect(eng.monday.footnote).toMatch(/Alder Lane/)
+    expect(eng.week1.map((t) => t.title)).toEqual([
+      'Set up your dev environment',
+      'Clone the repos and run the app',
+      'Read the architecture overview',
+      'Review the employee handbook',
+      'Complete compliance training',
+    ])
+    expect(eng.month1.map((t) => t.key)).toEqual(['check-in-30', 'first-pr', 'onboarding-feedback'])
+
+    // A designer starting the same day sees different content.
+    const plan = generatePlan('Design', s.hires[0].startDate, 'dana')
+    const withDesigner: AppState = {
+      ...s,
+      hires: [...s.hires, { ...s.hires[0], id: 'dana', name: 'Dana Fox', firstName: 'Dana', title: 'Product designer', role: 'Design' }],
+      tasks: [...s.tasks, ...plan.tasks],
+    }
+    const des = comingUp(withDesigner, 'dana')
+    expect(des.week1.map((t) => t.key)).toEqual(['design-system', 'meet-pms', 'research-library'])
+    expect(des.monday.items.at(-1)?.text).toBe('Lunch with the design team')
+  })
+
+  it('runs Day 1 tasks in itinerary order', () => {
+    const s = reducer(completeKeys(seed(), C, PRE_START_OPEN), { type: 'jumpToStartDay' })
+    expect(getFocusTask(s, C)?.key).toBe('meet-manager')
   })
 })

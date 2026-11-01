@@ -2,8 +2,8 @@ import { isISODate } from './dates'
 import { createSeed } from './mock'
 import type { AppState } from './types'
 
-/** v4: direct deposit removed, welcome guide became the Monday sanity check. Older saves start fresh. */
-export const STORAGE_KEY = 'bp-start:v4'
+/** v5: sanity check removed, repo request became code access, Day 1 reordered. Older saves start fresh. */
+export const STORAGE_KEY = 'bp-start:v5'
 
 /** Shape check: anything that doesn't look like our state is treated as corrupt. */
 export function isAppState(value: unknown): value is AppState {
