@@ -92,6 +92,27 @@ Waiting (not counted in 2 of 8): Your BrightPath accounts (owner IT, ready Monda
 "Do this first" rule: tasks that unblock someone else first, then earliest due, then group order.
 All dates are OFFSETS from start date (never hardcode calendar dates).
 
+## Task interactions
+Every task is done IN PLACE inside the focus card (no modals, no new pages). Each task has a
+`kind`; the primary button is task-specific and only completes the task when it is valid.
+- form: short fields filled in the card. Only "Confirm your name and contact details" (legal
+  first/last name prefilled, optional preferred name, mobile phone, personal email). Button "Confirm".
+- steps: checkable steps in the card (Slack). "Mark done" stays disabled until every step is
+  checked; step progress saves as she goes.
+- read: a short scrollable guide (day-1 welcome guide). "I've read it" unlocks at the bottom.
+- request: ask someone for access (production repo: GitHub username, repos, one-line reason).
+  "Send to Mateo" creates the AccessRequest and opens its tracker.
+- handoff: sensitive paperwork that real onboarding tools hand to a secure provider (I-9 and W-4,
+  direct deposit). The card shows what it is in one sentence, the time chip, a short "Have ready"
+  list, and "Open secure form". That opens a clearly labeled inline mock screen ("In production
+  this opens BrightPath's secure HR portal") with "Done in portal", which returns to the card and
+  enables "I've finished it". NEVER collect SSNs, addresses, routing or account numbers in this app.
+- Tasks with no kind (later phases) keep a plain "Mark done".
+Rules: amber, specific validation messages shown after typing + blur or on submit (never red, no
+alert()); drafts auto-save so a refresh keeps her place; a short "Saving…" state and no double
+submits; focus moves to the first field of each new card. Done tasks of kind form/request can be
+edited, and handoff tasks reopened, from the Done list without changing progress or the plant.
+
 ## Later phases
 Day 1 (pick up laptop and badge, meet your manager, meet your onboarding buddy, security
 training), Week 1 (engineering: GitHub access, local dev environment, clone repos and run the app,
