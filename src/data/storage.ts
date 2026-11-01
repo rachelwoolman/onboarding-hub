@@ -2,7 +2,8 @@ import { isISODate } from './dates'
 import { createSeed } from './mock'
 import type { AppState } from './types'
 
-export const STORAGE_KEY = 'bp-start:v1'
+/** v2: tasks gained `kind` and saved form data. Older saves start fresh. */
+export const STORAGE_KEY = 'bp-start:v2'
 
 /** Shape check: anything that doesn't look like our state is treated as corrupt. */
 export function isAppState(value: unknown): value is AppState {

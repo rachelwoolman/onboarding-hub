@@ -7,14 +7,17 @@ import {
   type ReactNode,
 } from 'react'
 import { reducer, type Action } from '../data/reducer'
+import { clearAllDrafts } from '../data/drafts'
 import { loadState, parseState, saveState, STORAGE_KEY } from '../data/storage'
-import type { AppState, ISODate, View } from '../data/types'
+import type { AppState, ISODate, TaskData, View } from '../data/types'
 
 /** How long simulated IT takes to provision after a manager approves. */
 export const IT_PROVISION_MS = 3500
 
 interface Actions {
-  completeTask: (taskId: string) => void
+  completeTask: (taskId: string, data?: TaskData) => void
+  updateTaskData: (taskId: string, data: TaskData) => void
+  deferTask: (taskId: string) => void
   undoTask: (taskId: string) => void
   toggleStep: (taskId: string, step: number) => void
   submitAccessRequest: (taskId: string) => void
@@ -71,7 +74,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const actions = useMemo<Actions>(() => {
     const d = (a: Action) => dispatch(a)
     return {
-      completeTask: (taskId) => d({ type: 'completeTask', taskId }),
+      completeTask: (taskId, data) => d({ type: 'completeTask', taskId, data }),
+      updateTaskData: (taskId, data) => d({ type: 'updateTaskData', taskId, data }),
+      deferTask: (taskId) => d({ type: 'deferTask', taskId }),
       undoTask: (taskId) => d({ type: 'undoTask', taskId }),
       toggleStep: (taskId, step) => d({ type: 'toggleStep', taskId, step }),
       submitAccessRequest: (taskId) => d({ type: 'submitAccessRequest', taskId }),
@@ -85,7 +90,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       moveStartDate: (hireId, startDate) => d({ type: 'moveStartDate', hireId, startDate }),
       dismissStartMoved: (hireId) => d({ type: 'dismissStartMoved', hireId }),
       setView: (view) => d({ type: 'setView', view }),
-      resetData: () => d({ type: 'resetData' }),
+      resetData: () => {
+        clearAllDrafts()
+        d({ type: 'resetData' })
+      },
     }
   }, [])
 

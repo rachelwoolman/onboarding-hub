@@ -36,6 +36,14 @@ export function dayOfOnboarding(hire: Hire, today: ISODate): number {
   return daysBetween(hire.startDate, today)
 }
 
+/** Name to greet the hire by: their preferred name once they've told us. */
+export function displayName(state: AppState, hireId: string): string {
+  const hire = getHire(state, hireId)
+  const details = tasksFor(state, hireId).find((t) => t.key === 'confirm-details')
+  const preferred = details?.data?.preferredName
+  return (typeof preferred === 'string' && preferred.trim()) || hire?.firstName || 'there'
+}
+
 // Phases -----------------------------------------------------------------------
 
 export function phaseIsOpen(hire: Hire, phase: PhaseId, today: ISODate): boolean {
@@ -89,6 +97,10 @@ export function compareFocus(a: Task, b: Task): number {
   const ua = a.unblocks ? 0 : 1
   const ub = b.unblocks ? 0 : 1
   if (ua !== ub) return ua - ub
+  // "I'll do this later" sends a task to the back of the queue.
+  const da = a.deferred ? 1 : 0
+  const db = b.deferred ? 1 : 0
+  if (da !== db) return da - db
   if (a.dueOffset !== b.dueOffset) return a.dueOffset - b.dueOffset
   if (a.stop !== b.stop) return a.stop - b.stop
   return a.order - b.order

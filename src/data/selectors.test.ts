@@ -21,6 +21,8 @@ import {
   waitingFor,
 } from './selectors'
 import { parseState } from './storage'
+import { account, email, githubUsername, i9Documents, isValidRouting, phone, routing, zip } from './validation'
+import { taskSummary } from './summaries'
 import type { AppState } from './types'
 
 // A Sunday, like the day this was written. Chloe starts the next day (Monday).
@@ -29,10 +31,18 @@ const seed = () => createSeed(REAL_TODAY)
 const C = 'chloe'
 
 function completeKeys(state: AppState, hireId: string, keys: string[]): AppState {
-  return keys.reduce(
-    (s, key) => reducer(s, { type: 'completeTask', taskId: `${hireId}:${key}`, at: 'x' }),
-    state,
-  )
+  return keys.reduce((s, key) => {
+    const id = `${hireId}:${key}`
+    const task = s.tasks.find((t) => t.id === id)
+    // Steps tasks need every step checked first, like in the UI.
+    if (task?.kind === 'steps' && !task.doneAt) {
+      task.steps?.forEach((_, i) => {
+        if (!s.tasks.find((t) => t.id === id)?.stepsDone?.includes(i))
+          s = reducer(s, { type: 'toggleStep', taskId: id, step: i })
+      })
+    }
+    return reducer(s, { type: 'completeTask', taskId: id, at: 'x' })
+  }, state)
 }
 
 const PRE_START_OPEN = ['confirm-details', 'i9-w4', 'direct-deposit', 'slack-invite', 'welcome-guide', 'repo-access']
@@ -214,5 +224,79 @@ describe('generatePlan', () => {
     expect(hirePageState(empty, C)).toEqual({ kind: 'empty' })
     expect(getFocusTask(empty, C)).toBeNull()
     expect(minutesLeft(empty, C)).toBe(0)
+  })
+})
+
+describe('validation', () => {
+  it('gives specific phone and email messages', () => {
+    expect(phone('555 0101')).toBe('That phone number looks short.')
+    expect(phone('(555) 010-1234')).toBeNull()
+    expect(phone('+1 555 010 1234')).toBeNull()
+    expect(phone('')).toMatch(/mobile number/)
+    expect(email('chloe.example.com')).toBe('That email is missing an @.')
+    expect(email('chloe@example')).toMatch(/complete/)
+    expect(email('chloe@example.com')).toBeNull()
+    expect(zip('9411')).toMatch(/5 digits/)
+  })
+  it('checks ABA routing numbers', () => {
+    expect(isValidRouting('011000015')).toBe(true) // Federal Reserve Bank of Boston
+    expect(isValidRouting('021000021')).toBe(true)
+    expect(isValidRouting('123456789')).toBe(false)
+    expect(routing('12345')).toMatch(/9 digits/)
+    expect(routing('123456789')).toMatch(/check out/)
+    expect(account('12')).toMatch(/short/)
+  })
+  it('checks GitHub usernames and I-9 documents', () => {
+    expect(githubUsername('chloe-z')).toBeNull()
+    expect(githubUsername('-chloe')).toMatch(/dash/)
+    expect(githubUsername('chloe--z')).toMatch(/dash/)
+    expect(i9Documents(['passport'])).toBeNull()
+    expect(i9Documents(['license', 'ssn-card'])).toBeNull()
+    expect(i9Documents(['license'])).toMatch(/Social Security/)
+    expect(i9Documents([])).toMatch(/Pick/)
+  })
+})
+
+describe('doing tasks', () => {
+  it('only completes the Slack task once every step is checked', () => {
+    let s = reducer(seed(), { type: 'completeTask', taskId: `${C}:slack-invite` })
+    expect(s.tasks.find((t) => t.key === 'slack-invite' && t.hireId === C)?.doneAt).toBeUndefined()
+    s = completeKeys(s, C, ['slack-invite'])
+    expect(s.tasks.find((t) => t.key === 'slack-invite' && t.hireId === C)?.doneAt).toBeTruthy()
+  })
+
+  it('saves form data, and editing keeps progress and the plant', () => {
+    const id = `${C}:direct-deposit`
+    let s = reducer(seed(), {
+      type: 'completeTask',
+      taskId: id,
+      data: { bankName: 'Fake Bank', routing: '011000015', accountType: 'checking', accountLast4: '4321' },
+    })
+    const counts = phaseCounts(s, C)
+    const stage = plantStage(s, C)
+    expect(taskSummary(s.tasks.find((t) => t.id === id)!)).toBe('Checking ····4321')
+    s = reducer(s, { type: 'updateTaskData', taskId: id, data: { accountType: 'savings', accountLast4: '9876' } })
+    expect(taskSummary(s.tasks.find((t) => t.id === id)!)).toBe('Savings ····9876')
+    expect(phaseCounts(s, C)).toEqual(counts)
+    expect(plantStage(s, C)).toBe(stage)
+  })
+
+  it('carries request details and resends a declined request when edited', () => {
+    const id = `${C}:repo-access`
+    let s = reducer(seed(), { type: 'completeTask', taskId: id, data: { githubUsername: 'chloe-z', repos: ['care-api'] } })
+    expect(s.requests[0].details).toMatchObject({ githubUsername: 'chloe-z' })
+    s = reducer(s, { type: 'declineRequest', requestId: s.requests[0].id, note: 'Add patient-web too' })
+    s = reducer(s, { type: 'updateTaskData', taskId: id, data: { githubUsername: 'chloe-z', repos: ['care-api', 'patient-web'] } })
+    expect(s.requests[0].status).toBe('waitingOnManager')
+    expect(s.requests[0].details?.repos).toHaveLength(2)
+  })
+
+  it('"I\'ll do this later" sends a task to the back of the queue', () => {
+    let s = completeKeys(seed(), C, ['confirm-details', 'i9-w4'])
+    expect(getFocusTask(s, C)?.key).toBe('direct-deposit')
+    s = reducer(s, { type: 'deferTask', taskId: `${C}:direct-deposit` })
+    expect(getFocusTask(s, C)?.key).toBe('slack-invite')
+    s = completeKeys(s, C, ['slack-invite', 'welcome-guide', 'repo-access'])
+    expect(getFocusTask(s, C)?.key).toBe('direct-deposit')
   })
 })

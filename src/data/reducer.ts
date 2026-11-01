@@ -1,10 +1,12 @@
 import { addDays, daysBetween } from './dates'
 import { createSeed } from './mock'
 import { getHire, getNextLockedPhase } from './selectors'
-import type { AccessRequest, AppState, ISODate, View, WaitingItem } from './types'
+import type { AccessRequest, AppState, ISODate, TaskData, View, WaitingItem } from './types'
 
 export type Action =
-  | { type: 'completeTask'; taskId: string; at?: string }
+  | { type: 'completeTask'; taskId: string; data?: TaskData; at?: string }
+  | { type: 'updateTaskData'; taskId: string; data: TaskData; at?: string }
+  | { type: 'deferTask'; taskId: string }
   | { type: 'undoTask'; taskId: string }
   | { type: 'toggleStep'; taskId: string; step: number }
   | { type: 'submitAccessRequest'; taskId: string; at?: string }
@@ -41,8 +43,15 @@ export function reducer(state: AppState, action: Action): AppState {
       const task = state.tasks.find((t) => t.id === action.taskId)
       // Idempotent: a double click (or a stale tab) can never complete twice.
       if (!task || task.doneAt) return state
+      // A steps task is only done once every step is checked.
+      if (task.kind === 'steps' && (task.stepsDone?.length ?? 0) < (task.steps?.length ?? 0)) return state
       const at = action.at ?? nowStamp()
-      let next = updateTask(state, task.id, (t) => ({ ...t, doneAt: at }))
+      let next = updateTask(state, task.id, (t) => ({
+        ...t,
+        doneAt: at,
+        deferred: undefined,
+        data: action.data ?? t.data,
+      }))
       if (task.approval) next = reducer(next, { type: 'submitAccessRequest', taskId: task.id, at })
       if (task.handoff && !next.waiting.some((w) => w.id === `${task.hireId}:wait:${task.handoff!.key}`)) {
         const item: WaitingItem = {
@@ -59,6 +68,31 @@ export function reducer(state: AppState, action: Action): AppState {
         next = { ...next, waiting: [...next.waiting, item] }
       }
       return next
+    }
+
+    case 'updateTaskData': {
+      // Editing a finished task changes what it saved, never whether it is done,
+      // so progress counts and the plant stay exactly where they were.
+      const task = state.tasks.find((t) => t.id === action.taskId)
+      if (!task || !task.doneAt) return state
+      let next = updateTask(state, task.id, (t) => ({ ...t, data: action.data }))
+      const req = next.requests.find((r) => r.taskId === task.id)
+      if (req) {
+        const at = action.at ?? nowStamp()
+        next = updateRequest(next, req.id, {
+          details: action.data,
+          updatedAt: at,
+          // Fixing a declined request sends it straight back to the manager.
+          ...(req.status === 'declined' ? { status: 'waitingOnManager' as const, note: undefined } : {}),
+        })
+      }
+      return next
+    }
+
+    case 'deferTask': {
+      const task = state.tasks.find((t) => t.id === action.taskId)
+      if (!task || task.doneAt || task.deferred) return state
+      return updateTask(state, task.id, (t) => ({ ...t, deferred: true }))
     }
 
     case 'undoTask': {
@@ -97,7 +131,12 @@ export function reducer(state: AppState, action: Action): AppState {
       const at = action.at ?? nowStamp()
       const existing = state.requests.find((r) => r.taskId === task.id)
       if (existing) {
-        return updateRequest(state, existing.id, { status: 'waitingOnManager', updatedAt: at, note: undefined })
+        return updateRequest(state, existing.id, {
+          status: 'waitingOnManager',
+          updatedAt: at,
+          note: undefined,
+          details: task.data ?? existing.details,
+        })
       }
       const request: AccessRequest = {
         id: `req:${task.id}`,
@@ -108,6 +147,7 @@ export function reducer(state: AppState, action: Action): AppState {
         status: 'waitingOnManager',
         requestedAt: at,
         updatedAt: at,
+        details: task.data,
       }
       return { ...state, requests: [...state.requests, request] }
     }

@@ -24,8 +24,19 @@ export interface Hire {
   remindedAt?: string
 }
 
+/**
+ * How a task is done in place:
+ * form (fill and submit), steps (check every step), read (scroll to the end),
+ * request (ask someone for access). Undefined means a plain "Mark done".
+ */
+export type TaskKind = 'form' | 'steps' | 'read' | 'request'
+
+/** Values a task saved when it was completed (or edited). Always fake demo data. */
+export type TaskData = Record<string, string | string[] | number | boolean>
+
 export interface Task {
   id: string
+  kind?: TaskKind
   hireId: string
   /** Stable template key, e.g. "confirm-details". */
   key: string
@@ -50,6 +61,10 @@ export interface Task {
   /** Completing this creates a waiting item owned by someone else. */
   handoff?: { key: string; title: string; owner: Owner; readyAfterDays: number }
   doneAt?: string
+  /** Saved form values. Kept when a done task is edited. */
+  data?: TaskData
+  /** "I'll do this later": goes to the back of the queue. */
+  deferred?: boolean
 }
 
 export type RequestStatus = 'waitingOnManager' | 'approved' | 'ready' | 'declined'
@@ -63,6 +78,8 @@ export interface AccessRequest {
   requestedAt: string
   updatedAt: string
   note?: string
+  /** What the hire asked for (e.g. GitHub username, repos, reason). */
+  details?: TaskData
 }
 
 /** Something the hire is waiting on someone else for. Never has a checkbox. */

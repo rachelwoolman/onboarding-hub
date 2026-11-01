@@ -1,4 +1,4 @@
-import type { Owner, PhaseId, Role } from './types'
+import type { Owner, PhaseId, Role, TaskKind } from './types'
 
 /**
  * Role-based onboarding templates. In a real product Sarah (HR) would edit these.
@@ -7,6 +7,7 @@ import type { Owner, PhaseId, Role } from './types'
 
 export interface TaskTemplate {
   key: string
+  kind?: TaskKind
   title: string
   short: string
   why: string
@@ -51,6 +52,7 @@ export interface RoleTemplate {
 
 const confirmDetails: TaskTemplate = {
   key: 'confirm-details',
+    kind: 'form',
   title: 'Confirm your name and contact details',
   short: 'Your details',
   why: 'So IT can create your BrightPath email and accounts.',
@@ -79,6 +81,7 @@ const backgroundCheck: TaskTemplate = {
 
 const i9w4: TaskTemplate = {
   key: 'i9-w4',
+    kind: 'form',
   title: 'Complete I-9 and W-4',
   short: 'I-9 and W-4',
   why: 'So you can be paid correctly from your first week.',
@@ -88,6 +91,7 @@ const i9w4: TaskTemplate = {
 
 const directDeposit: TaskTemplate = {
   key: 'direct-deposit',
+    kind: 'form',
   title: 'Set up direct deposit',
   short: 'Direct deposit',
   why: 'So your first paycheck lands in the right place.',
@@ -97,6 +101,7 @@ const directDeposit: TaskTemplate = {
 
 const welcomeGuide: TaskTemplate = {
   key: 'welcome-guide',
+    kind: 'read',
   title: 'Read your day-1 welcome guide',
   short: 'Welcome guide',
   why: 'Where to go, who to ask for, and what Monday looks like.',
@@ -107,6 +112,7 @@ const welcomeGuide: TaskTemplate = {
 function slackInvite(teamChannel: string): TaskTemplate {
   return {
     key: 'slack-invite',
+    kind: 'steps',
     title: 'Accept your Slack invite',
     short: 'Slack invite',
     why: 'Your team says hi here first.',
@@ -204,6 +210,7 @@ const engineering: RoleTemplate = {
             welcomeGuide,
             {
               key: 'repo-access',
+    kind: 'request',
               title: 'Request access to the production repo',
               short: 'Repo access',
               why: 'Your manager approves it, so it’s ready when you need it.',
@@ -340,6 +347,7 @@ const design: RoleTemplate = {
             slackInvite('design'),
             {
               key: 'figma-access',
+    kind: 'request',
               title: 'Request a Figma seat',
               short: 'Figma seat',
               why: 'Your manager approves it, so it’s ready on day 1.',
