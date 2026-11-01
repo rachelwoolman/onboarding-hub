@@ -41,7 +41,7 @@ organized and crafted than the mockups:
   would eventually edit.
 
 ## Principles
-1. "Before day 1" is the ONLY priority. Copy: "26 minutes and you're ready for Monday."
+1. "Before day 1" is the ONLY priority. Copy: "25 minutes and you're ready for Monday."
 2. One primary action on screen at a time. Never more than ~3 things competing for attention.
 3. Short copy. Warm, never corporate. About 40 words visible above the fold.
 4. Time estimate on every task, shown as a small chip.
@@ -50,11 +50,11 @@ organized and crafted than the mockups:
 7. Overdue is gentle amber, never red.
 
 ## Chloe's page (top to bottom, single centered column, max width ~720px)
-1. Header: "Hi Chloe 🌱" (soft serif name). Subline: "26 minutes and you're ready for Monday."
+1. Header: "Hi Chloe 🌱" (soft serif name). Subline: "25 minutes and you're ready for Monday."
    (minutes = remaining time, updates as tasks complete). Illustrated plant top right with caption
-   "2 of 7 done". Plant stages: seed (0%), sprout (>0%), leafy (>=60%), bloom (100%).
+   "2 of 6 done". Plant stages: seed (0%), sprout (>0%), leafy (>=60%), bloom (100%).
 2. Journey path: horizontal row of 3 stops joined by a line: "Quick start · 2 min",
-   "Paperwork · 15 min", "Get connected · 9 min". Current stop highlighted green, others muted.
+   "Paperwork · 15 min", "Get connected · 8 min". Current stop highlighted green, others muted.
    Names and times only. Completed stops show a check.
 3. Focus card: ONE task, centered, white card, soft shadow. Small group label, time chip,
    task title, one short why-line, a task-specific button, and an accurate count like
@@ -67,8 +67,8 @@ organized and crafted than the mockups:
 5. One quiet footer line: "2 done · 1 waiting on others". Each part expands in place.
    - Done: finished tasks, strikethrough, soft green checks. Reviewable.
    - Waiting: compact rows, no checkbox. "Your BrightPath accounts: IT is setting these up,
-     ready Monday morning" and an approval tracker pill "Repo access: waiting on Mateo" that
-     expands to a 4-step tracker (Requested, Waiting on Mateo, Approved, Ready) with caption
+     ready Monday morning" and an approval tracker pill "Code access: with Mateo" that
+     expands to a 4-step tracker (Requested, With Mateo, Approved, Ready) with caption
      "Mateo has your request. He usually responds within a day."
 6. Small round floating chat button -> "Onboarding assistant" panel. Suggested-question chips,
    canned answers for ~5 FAQs, and a "Still stuck? Contact HR" box on every answer.
@@ -77,20 +77,18 @@ organized and crafted than the mockups:
    Laptop answer: "You'll pick up your laptop and badge your first morning at the office. IT sets
    it up for you. Nothing needed from you until Monday."
 
-## Chloe's data (26 min remaining, 2 of 7 done = 29%)
+## Chloe's data (25 min remaining, 2 of 6 done = 33%)
 Done (2): Sign your offer letter; Consent to background check.
 Quick start (2 min): Confirm your name and contact details (2 min, unblocks IT, DO THIS FIRST,
   due today). Legal name, preferred name, phone. Why-line: "So IT can create your BrightPath
   email and accounts."
 Paperwork (15 min): Complete I-9 and W-4 (15 min, due Sunday). (Offer letter and background check
   are in this stop too, already done.)
-Get connected (9 min): Accept your Slack invite (5, Sunday, has 4 steps: 1. Open the invite in
+Get connected (8 min): Accept your Slack invite (5, Sunday, has 4 steps: 1. Open the invite in
   your email, 2. Pick your name and photo, 3. Join #general and #engineering, 4. Say hi in
-  #welcome); Your Monday sanity check (1, Sunday, 4 one-line "Got it" rows: arrive 9:15 at
-  240 Fern Street, 4th floor; Mateo meets you at the front desk at 9:30; pick up your badge and
-  laptop there (bring ID); free visitor parking on Alder Lane); Request access to the production
-  repo (3, Sunday, creates an approval request when completed).
-Waiting (not counted in 2 of 7): Your BrightPath accounts (owner IT, ready Monday morning).
+  #welcome); Get access to your team's code (3, Sunday, "Mateo approves it, so you can push code on
+  day one." GitHub username only; creates a "Code access" approval request when sent).
+Waiting (not counted in 2 of 6): Your BrightPath accounts (owner IT, ready Monday morning).
   Completing "Confirm your name and contact details" updates this row to "IT has what it needs
   and is setting these up."
 "Do this first" rule: tasks that unblock someone else first, then earliest due, then group order.
@@ -102,11 +100,11 @@ Every task is done IN PLACE inside the focus card (no modals, no new pages). Eac
 - form: "Confirm your name and contact details". Opens as a confirm card: "Is this right?" with the
   prefilled legal name, only the missing phone and email fields inline, and "Confirm". A small
   "Edit name" link reveals legal first/last and optional preferred name.
-- steps: tap-to-confirm rows; the button stays disabled until every row is done, and progress
-  saves as she goes. Slack invite (4 checkable steps, "Mark done") and Your Monday sanity check
-  (4 one-line "Got it" rows, "I'm ready for Monday", plus a mock-only "Add to calendar" toast).
-- request: ask someone for access (production repo: GitHub username, repos, one-line reason).
-  "Send to Mateo" creates the AccessRequest and opens its tracker.
+- steps: checkable steps; "Mark done" stays disabled until every step is checked, and progress
+  saves as she goes (Slack invite).
+- request: ask the manager for access. "Get access to your team's code" is a single validated
+  GitHub username field and "Send to Mateo", which creates the "Code access" AccessRequest and
+  opens its tracker.
 - handoff: sensitive paperwork that real onboarding tools hand to a secure provider (I-9 and W-4).
   The card shows what it is in one sentence, the time chip, a short "Have ready" list, and "Open
   secure form". That opens a clearly labeled inline mock screen ("In production this opens
@@ -120,23 +118,33 @@ Done tasks of kind form/request can be edited, and handoff tasks reopened, from 
 without changing progress or the plant.
 
 ## Later phases
-Day 1 (pick up laptop and badge, meet your manager, meet your onboarding buddy, security
-training), Week 1 (engineering: GitHub access, local dev environment, clone repos and run the app,
-architecture overview, handbook, compliance training), First month (30-day check-in, ship first
-small PR, give feedback on onboarding). Hidden until their date. Demo button "Jump to Monday"
+Day 1, in itinerary order (meet Mateo at the front desk, pick up your badge and laptop, security
+training, lunch with your onboarding buddy), Week 1 (engineering: set up your dev environment,
+clone the repos and run the app, read the architecture overview, review the employee handbook,
+complete compliance training), First month (30-day check-in with Mateo, ship your first small
+pull request, share feedback on onboarding). Hidden until their date. Demo button "Jump to Monday"
 advances time; then the same one-card + 3-stops UI shows Day 1 / Week 1 / First month tasks.
 Finished phases disappear.
 
 ## Chloe's states
 - A. Task completed: card slides away, plant grows.
 - B. Stop completed: gentle moment "Quick start done! Next: Paperwork".
-- C. All pre-start tasks done: full-bloom plant, "You're all set for Monday! 🌱", sub "Nothing left
-  before day 1. Take a breath.", one "Next up: Monday 9:30, meet your manager" card. Tapping it
-  expands in place into a read-only Day 1 preview labeled "Opens Monday" (9:30 Meet Mateo at the
-  front desk; 9:45 Pick up your badge and laptop; 11:00 Security training, 20 min; 1:00 Meet your
-  onboarding buddy). No checkboxes or completing buttons. One quiet line below: "Week 1 and your
-  first month will appear when you get there." No Week 1 or month tasks here. Waiting items stay
-  in the footer. Page otherwise empty.
+- C. All pre-start tasks done (keep it clean): headline "You're all set for Monday! 🌱", sub
+  "Nothing left before day 1. Take a breath.", full-bloom plant. No footer and nothing below the
+  Coming up card.
+  - The "6 of 6 done" caption under the plant is tappable: a small read-only list of completed
+    tasks (strikethrough, soft green checks), closed by default.
+  - If an access request is in progress, ONE quiet line under the subline: "Code access is with
+    Mateo." Tapping expands the 4-step tracker and caption. Hidden when nothing is in progress or
+    the request is Ready.
+  - One "Coming up" card with tab chips Monday / Week 1 / First month (Monday selected). All
+    read-only, no checkboxes or completing buttons; Week 1 and First month say "Opens when you get
+    there". Monday is a timed list (9:15 Arrive at 240 Fern Street, 4th floor; 9:30 Meet Mateo at
+    the front desk; 10:00 Pick up your badge and laptop (bring ID); 10:30 Your BrightPath accounts
+    are ready (IT); 11:00 Security training, 20 min; 12:30 Lunch with your onboarding buddy), a
+    footnote "Free visitor parking on Alder Lane." and a mock "Add to calendar" (toast). Week 1
+    lists the template's week-1 tasks with time estimates; First month its month-1 tasks. All of it
+    comes from the role template and generated plan, so the Design role shows different content.
 - D. Nothing due today but later tasks exist: small sprout, "You're all caught up for today.
   Next due: Sunday."
 - E. Fully onboarded: nearly empty page, "You're fully onboarded 🌱", small "Share feedback" link.
@@ -146,7 +154,7 @@ Finished phases disappear.
 - I. Zero tasks: friendly "Your plan is being prepared" state, no crash.
 
 ## Approval flow (THE demo moment)
-Chloe completes "Request access to the production repo" -> an AccessRequest is created
+Chloe completes "Get access to your team's code" -> a "Code access" AccessRequest is created
 (requested -> waitingOnManager). It appears in Mateo's "Needs you" strip. Mateo clicks Approve
 (or Decline with a reason). Chloe's tracker updates to Approved, then Ready (simulated IT).
 State is shared between both views via localStorage, so toggling "View as" shows it live.
@@ -154,14 +162,14 @@ State is shared between both views via localStorage, so toggling "View as" shows
 ## Mateo's page (one page, same style)
 1. Header: "Good morning, Mateo 🌱" (serif name). Subline: "1 thing needs you."
 2. "Needs you" strip (only when needed): slim amber-tinted banner, one item, one button.
-   "Chloe is waiting on your approval: production repo access" with Approve and a quiet Decline
+   "Chloe is waiting on your approval: code access" with Approve and a quiet Decline
    link. If several, show the first plus a "+1 more" chip.
 3. "Your garden": one card per new hire with a plant matching status, name, role, start info,
    tiny % number, one short status line, one "Check in" button. Most attention first.
-   - Priya Nair, Senior engineer, started 3 days ago, 60%, drooping sprout with amber dot,
+   - Priya Nair, Senior engineer, started 3 days ago, 56%, drooping sprout with amber dot,
      "Blocked: waiting on GitHub access, 3 days."
    - Jordan Lee, Product engineer, starts in 2 days, 0%, bare seed, "Hasn't started yet."
-   - Chloe Zhang, Software engineer, starts Monday, 29%, healthy sprout, "On track."
+   - Chloe Zhang, Software engineer, starts Monday, 33%, healthy sprout, "On track."
 4. "Check in" expands the card IN PLACE: one plain line, ONE action fitted to the situation (Nudge
    IT for blocked, Send a reminder for not started, Approve for approval, none for on track), and a
    collapsed "See all tasks" with owner, status, due (blocked item in amber).
