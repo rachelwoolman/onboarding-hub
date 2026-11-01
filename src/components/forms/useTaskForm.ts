@@ -69,8 +69,8 @@ export function useTaskForm<T extends TaskData>({ draftKey, initial, validate, n
     const errs = validate(values)
     const firstBad = (Object.keys(values) as (keyof T)[]).find((k) => errs[k])
     if (firstBad !== undefined) {
-      const el = document.getElementById(`${idPrefix}-${String(firstBad)}`)
-      el?.focus()
+      // Next frame: the field may only appear once the form re-renders (e.g. hidden name fields).
+      window.requestAnimationFrame(() => document.getElementById(`${idPrefix}-${String(firstBad)}`)?.focus())
       return
     }
     onValid(values)

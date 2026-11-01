@@ -1,5 +1,6 @@
 import { createElement, useEffect, useRef, useState } from 'react'
 import { clearDraft } from '../data/drafts'
+import { fill } from '../data/copy'
 import { taskSummary } from '../data/summaries'
 import type { Task, TaskData } from '../data/types'
 import { bodyFor } from './tasks/bodyFor'
@@ -58,6 +59,7 @@ export function FocusCard({
   const cardRef = useRef<HTMLElement>(null)
   const timers = useRef<number[]>([])
   const editing = mode === 'edit'
+  const copy = { day: startDay, manager: managerName }
   const idPrefix = `${editing ? 'edit' : 'task'}-${task.key}`
   const draftKey = editing ? `${task.id}:edit` : task.id
 
@@ -66,12 +68,19 @@ export function FocusCard({
   // Focus the first field when the card opens after an interaction.
   useEffect(() => {
     if (!autoFocus || !cardRef.current) return
-    const target = cardRef.current.querySelector<HTMLElement>(
-      'input:not([type=hidden]):not([disabled]), textarea, select, [role=region][tabindex]',
+    const card = cardRef.current
+    const target = card.querySelector<HTMLElement>(
+      '[data-autofocus], input:not([type=hidden]):not([disabled]), textarea, select, [role=region][tabindex]',
     )
     // Cards without fields (handoffs) focus their primary button instead.
-    const fallback = cardRef.current.querySelector<HTMLElement>('button[type=submit]:not([disabled])')
-    ;(target ?? fallback ?? cardRef.current.querySelector<HTMLElement>('h2'))?.focus({ preventScroll: false })
+    const fallback = card.querySelector<HTMLElement>('button[type=submit]:not([disabled])')
+    ;(target ?? fallback ?? card.querySelector<HTMLElement>('h2'))?.focus({ preventScroll: true })
+    // Scroll so the card's heading shows, instead of letting the browser scroll just
+    // far enough for the field (which clipped the heading off the top).
+    const top = card.getBoundingClientRect().top
+    if (top < 0 || top > window.innerHeight * 0.5) {
+      card.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' })
+    }
   }, [autoFocus])
 
   // All timers are tracked, so nothing fires after the card unmounts (e.g. Reset mid-save).
@@ -152,7 +161,7 @@ export function FocusCard({
     <article
       ref={cardRef}
       aria-labelledby={`${idPrefix}-title`}
-      className={`relative rounded-card bg-paper px-5 pb-7 pt-6 shadow-card sm:px-10 sm:pb-9 sm:pt-8 ${
+      className={`relative scroll-mt-16 rounded-card bg-paper px-5 pb-7 pt-6 shadow-card sm:px-10 sm:pb-9 sm:pt-8 ${
         phase === 'leaving' ? 'animate-card-out' : 'animate-card-in'
       } ${editing ? 'ring-2 ring-sage-deep' : ''}`}
     >
@@ -174,9 +183,9 @@ export function FocusCard({
           tabIndex={-1}
           className="text-balance text-[22px] font-semibold leading-snug tracking-tight text-ink focus:outline-none sm:text-[26px]"
         >
-          {task.title}
+          {fill(task.title, copy)}
         </h2>
-        <p className="mt-2 text-pretty text-[15px] text-ink-soft">{task.why}</p>
+        <p className="mt-2 text-pretty text-[15px] text-ink-soft">{fill(task.why, copy)}</p>
         {overdue && !editing && (
           <p className="mx-auto mt-4 inline-flex rounded-full bg-amber-soft px-3.5 py-1.5 text-[13px] font-medium text-amber">
             {overdue} No worries, it only takes {task.minutes} min.

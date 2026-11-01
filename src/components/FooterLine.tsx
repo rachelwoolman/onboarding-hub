@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { fill } from '../data/copy'
 import { taskSummary } from '../data/summaries'
 import type { WaitingRow } from '../data/selectors'
 import type { AccessRequest, Task } from '../data/types'
@@ -9,6 +10,7 @@ interface FooterLineProps {
   waiting: WaitingRow[]
   requests: AccessRequest[]
   managerName: string
+  startDay: string
   onUndo: (taskId: string) => void
   onEdit: (taskId: string) => void
   editingId: string | null
@@ -25,6 +27,7 @@ export function FooterLine({
   waiting,
   requests,
   managerName,
+  startDay,
   onUndo,
   onEdit,
   editingId,
@@ -88,7 +91,9 @@ export function FooterLine({
                     <CheckIcon className="size-3" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-ink-muted line-through decoration-ink-muted/40">{t.title}</span>
+                    <span className="block text-ink-muted line-through decoration-ink-muted/40">
+                      {fill(t.title, { day: startDay, manager: managerName })}
+                    </span>
                     {summary && <span className="block truncate text-xs text-ink-muted/80">{summary}</span>}
                   </span>
                   {isEditing ? (
@@ -98,7 +103,7 @@ export function FooterLine({
                       type="button"
                       onClick={() => (editable ? onEdit(t.id) : onUndo(t.id))}
                       tabIndex={open === 'done' ? 0 : -1}
-                      aria-label={`${editable ? editLabel : 'Undo'}: ${t.title}`}
+                      aria-label={`${editable ? editLabel : 'Undo'}: ${fill(t.title, { day: startDay, manager: managerName })}`}
                       className="rounded-full px-2.5 py-1 text-xs font-medium text-ink-muted transition hover:bg-sage hover:text-ink"
                     >
                       {editable ? editLabel : 'Undo'}

@@ -57,6 +57,8 @@
 
 @layer base {
   html {
+    /* Anything scrolled or focused into view keeps a little room above it. */
+    scroll-padding-top: 1.5rem;
     background: var(--color-cream);
     color: var(--color-ink);
     font-family: var(--font-sans);

@@ -23,7 +23,8 @@ import { FocusCard } from '../components/FocusCard'
 import { FooterLine } from '../components/FooterLine'
 import { JourneyPath } from '../components/JourneyPath'
 import { Plant } from '../components/Plant'
-import { Bloom, Chip, LeafIcon } from '../components/ui'
+import { Bloom, ChevronIcon, Chip, LeafIcon } from '../components/ui'
+import { fill } from '../data/copy'
 
 interface Moment {
   id: number
@@ -38,14 +39,17 @@ export function ChloePage() {
   const page = hirePageState(state, hireId)
   const focus = getFocusTask(state, hireId)
   const stops = getStops(state, hireId)
-  const counts = phaseCounts(state, hireId)
+  const phaseCount = phaseCounts(state, hireId)
   const minutes = minutesLeft(state, hireId)
   const upNext = getUpNext(state, hireId)
   const waiting = waitingFor(state, hireId)
   const allRequests = state.requests.filter((r) => r.hireId === hireId)
   const listPhase: PhaseId | null =
     page.kind === 'focus' ? page.phase : page.kind === 'allSetForStart' ? 'preStart' : null
-  const doneTasks = listPhase ? phaseTasks(state, hireId, listPhase).filter(isDone) : []
+  const listTasks = listPhase ? phaseTasks(state, hireId, listPhase) : []
+  const doneTasks = listTasks.filter(isDone)
+  // On the all-set screen the caption still reads "7 of 7 done", so the number never vanishes.
+  const counts = page.kind === 'allSetForStart' ? { done: doneTasks.length, total: listTasks.length } : phaseCount
   const name = displayName(state, hireId)
 
   // Editing a finished task happens in the card slot, one thing at a time.
@@ -234,13 +238,22 @@ export function ChloePage() {
             )}
           </div>
 
-          {upNext.length > 0 && !editing && <UpNext titles={upNext.map((t) => t.short)} />}
+          {upNext.length > 0 && !editing && <UpNext titles={upNext.map((t) => fill(t.short, { day: startDay, manager: hire.managerName }))} />}
         </>
       )}
 
       {page.kind === 'allSetForStart' && (
         <div id="task-slot" className="mt-12 scroll-mt-6">
-          {editing ? editCard : <NextUpCard label={`Next up: ${startDay} 9:30`} title="Meet your manager" />}
+          {editing ? (
+            editCard
+          ) : (
+            <>
+              <NextUpCard startDay={startDay} managerName={hire.managerName} />
+              <p className="mt-5 text-center text-[13px] text-ink-muted">
+                Week 1 and your first month will appear when you get there.
+              </p>
+            </>
+          )}
         </div>
       )}
 
@@ -269,6 +282,7 @@ export function ChloePage() {
             editingId={editingId}
             spotlightRequestId={spotlightRequest}
             onResubmit={actions.resubmitRequest}
+            startDay={startDay}
           />
         </div>
       )}
@@ -380,18 +394,58 @@ function UpNext({ titles }: { titles: string[] }) {
   )
 }
 
-function NextUpCard({ label, title, className = '' }: { label: string; title: string; className?: string }) {
+/**
+ * "Next up" on the all-set screen. Tapping it previews Day 1 in place: read-only,
+ * nothing to check off, because none of it opens until the start date.
+ */
+function NextUpCard({ startDay, managerName }: { startDay: string; managerName: string }) {
+  const [open, setOpen] = useState(false)
+  const rows = [
+    { time: '9:30', text: `Meet ${managerName} at the front desk` },
+    { time: '9:45', text: 'Pick up your badge and laptop' },
+    { time: '11:00', text: 'Security training, 20 min' },
+    { time: '1:00', text: 'Meet your onboarding buddy' },
+  ]
   return (
-    <div className={`flex animate-card-in items-center gap-4 rounded-card bg-paper px-6 py-5 shadow-card ${className}`}>
-      <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-sage text-leaf-deep">
-        <svg viewBox="0 0 20 20" fill="none" className="size-5" aria-hidden="true">
-          <rect x="3" y="4.5" width="14" height="12" rx="3" stroke="currentColor" strokeWidth="1.6" />
-          <path d="M3 8.5h14M7 3v3M13 3v3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      </span>
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-leaf-deep">{label}</p>
-        <p className="mt-0.5 text-[17px] font-semibold text-ink">{title}</p>
+    <div className="animate-card-in rounded-card bg-paper shadow-card">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls="day1-preview"
+        className="flex w-full items-center gap-4 rounded-card px-6 py-5 text-left transition hover:bg-sage/20"
+      >
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-sage text-leaf-deep">
+          <svg viewBox="0 0 20 20" fill="none" className="size-5" aria-hidden="true">
+            <rect x="3" y="4.5" width="14" height="12" rx="3" stroke="currentColor" strokeWidth="1.6" />
+            <path d="M3 8.5h14M7 3v3M13 3v3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-xs font-semibold uppercase tracking-[0.1em] text-leaf-deep">
+            Next up: {startDay} 9:30
+          </span>
+          <span className="mt-0.5 block text-[17px] font-semibold text-ink">Meet your manager</span>
+        </span>
+        <ChevronIcon open={open} className="size-4 shrink-0 text-ink-muted" />
+      </button>
+      <div className="expand" data-open={open} id="day1-preview">
+        <div>
+          <div className="px-6 pb-6">
+            <div className="flex items-center justify-between border-t border-line pt-4">
+              <p className="text-[13px] font-semibold text-ink">Your Day 1</p>
+              <Chip tone="mist">Opens {startDay}</Chip>
+            </div>
+            <ol className="mt-3 space-y-1" aria-label={`Day 1 preview, opens ${startDay}`}>
+              {rows.map((r) => (
+                <li key={r.time} className="flex items-baseline gap-4 rounded-xl px-1 py-2 text-[15px]">
+                  <span className="w-12 shrink-0 text-right text-[13px] font-medium tabular-nums text-ink-muted">{r.time}</span>
+                  <span className="text-ink-soft">{r.text}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
       </div>
     </div>
   )

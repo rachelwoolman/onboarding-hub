@@ -6,7 +6,7 @@ import { CheckIcon } from '../ui'
 type View = 'card' | 'portal'
 
 /**
- * Sensitive paperwork (I-9, W-4, direct deposit) is finished in BrightPath's secure HR
+ * Sensitive paperwork (I-9 and W-4) is finished in BrightPath's secure HR
  * portal, never typed into this app. The card says what it is and what to have ready,
  * opens the portal (a clearly labeled mock here), then asks her to confirm she finished.
  */
@@ -24,8 +24,8 @@ export function HandoffBody({ task, mode, idPrefix, draftKey, submit, footer, on
   // confirm button when she returns.
   useEffect(() => {
     if (!moved.current) return
-    if (view === 'portal') portalRef.current?.querySelector<HTMLElement>('h3')?.focus()
-    else formRef.current?.querySelector<HTMLButtonElement>('button[type=submit]')?.focus()
+    if (view === 'portal') portalRef.current?.querySelector<HTMLElement>('h3')?.focus({ preventScroll: true })
+    else formRef.current?.querySelector<HTMLButtonElement>('button[type=submit]')?.focus({ preventScroll: true })
   }, [view])
 
   const open = () => {

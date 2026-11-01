@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { email, githubUsername, phone, required } from '../../data/validation'
 import type { Task, TaskData } from '../../data/types'
 import { CheckboxGroup, TextField } from '../forms/fields'
 import { useTaskForm } from '../forms/useTaskForm'
+import { fill } from '../../data/copy'
 import { CheckIcon } from '../ui'
 
 export interface FooterOpts {
@@ -53,6 +54,9 @@ export function ContactBody({ task, idPrefix, draftKey, submit, footer, mode }: 
       email: email(v.email),
     }),
   })
+  // The name is already known, so it's a quick "is this right?" with a way to change it.
+  const [editName, setEditName] = useState(false)
+  const nameOpen = editName || Boolean(f.error('firstName') || f.error('lastName'))
   const bind = (name: keyof typeof f.values) => ({
     id: f.id(name),
     value: f.values[name],
@@ -60,14 +64,39 @@ export function ContactBody({ task, idPrefix, draftKey, submit, footer, mode }: 
     onBlur: () => f.touch(name),
     error: f.error(name),
   })
+  const fullName = `${f.values.firstName} ${f.values.lastName}`.trim()
   return (
     <form noValidate onSubmit={f.handleSubmit((v) => submit({ ...v, phone: v.phone.trim(), email: v.email.trim() }))}>
       <div className="space-y-5">
-        <div className="grid gap-5 sm:grid-cols-2">
-          <TextField label="Legal first name" autoComplete="given-name" {...bind('firstName')} />
-          <TextField label="Legal last name" autoComplete="family-name" {...bind('lastName')} />
-        </div>
-        <TextField label="Preferred name" optional hint="What should we call you?" autoComplete="nickname" {...bind('preferredName')} />
+        {nameOpen ? (
+          <div className="space-y-5 rounded-2xl bg-cream/50 p-4 animate-fade-up">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <TextField label="Legal first name" autoComplete="given-name" {...bind('firstName')} />
+              <TextField label="Legal last name" autoComplete="family-name" {...bind('lastName')} />
+            </div>
+            <TextField label="Preferred name" optional hint="What should we call you?" autoComplete="nickname" {...bind('preferredName')} />
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-3 rounded-2xl bg-sage/60 px-5 py-4">
+            <div className="min-w-0 text-left">
+              <p className="text-[13px] font-medium text-leaf-deep">Is this right?</p>
+              <p className="mt-0.5 truncate text-[18px] font-semibold text-ink">{fullName || 'Add your name'}</p>
+              {f.values.preferredName.trim() && (
+                <p className="text-[13px] text-ink-muted">Goes by {f.values.preferredName.trim()}</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setEditName(true)
+                window.requestAnimationFrame(() => document.getElementById(f.id('firstName'))?.focus())
+              }}
+              className="shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium text-leaf-deep underline decoration-leaf/30 underline-offset-4 transition hover:bg-paper"
+            >
+              Edit name
+            </button>
+          </div>
+        )}
         <TextField label="Mobile phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="(555) 010-1234" {...bind('phone')} />
         <TextField label="Personal email" type="email" inputMode="email" autoComplete="email" placeholder="chloe@example.com" {...bind('email')} />
       </div>
@@ -78,8 +107,8 @@ export function ContactBody({ task, idPrefix, draftKey, submit, footer, mode }: 
 
 // 4. Slack steps ---------------------------------------------------------------------------
 
-export function StepsBody({ task, submit, footer, onToggleStep, idPrefix }: BodyProps) {
-  const steps = task.steps ?? []
+export function StepsBody({ task, submit, footer, onToggleStep, idPrefix, startDay, managerName }: BodyProps) {
+  const steps = (task.steps ?? []).map((t) => fill(t, { day: startDay, manager: managerName }))
   const done = new Set(task.stepsDone ?? [])
   const all = done.size === steps.length
   return (
@@ -127,96 +156,6 @@ export function StepsBody({ task, submit, footer, onToggleStep, idPrefix }: Body
         disabled: !all,
         disabledHint: `Check all ${steps.length} steps to finish.`,
       })}
-    </form>
-  )
-}
-
-// 5. Welcome guide ------------------------------------------------------------------------
-
-const guide = (startDay: string, manager: string): { title: string; body: string[] }[] => [
-  {
-    title: 'Where to arrive, and when',
-    body: [
-      `Come to BrightPath HQ at 9:15 on ${startDay}. We’re at 240 Fern Street, 4th floor, across from the green café.`,
-      `${manager} meets you at the front desk at 9:30. Your first morning is all set-up and hellos, no real work.`,
-    ],
-  },
-  {
-    title: 'Parking and badge pickup',
-    body: [
-      'Visitor parking is free in the garage on Alder Lane. Take a ticket and the front desk will validate it.',
-      'Pick up your badge and laptop at the front desk. Bring the I-9 documents you picked, so HR can check them in two minutes.',
-    ],
-  },
-  {
-    title: 'What to wear',
-    body: [
-      'Whatever you feel comfortable in. Most people wear jeans and a sweater. Bring a layer: the 4th floor runs cool.',
-    ],
-  },
-  {
-    title: 'Who to ask',
-    body: [
-      'Your onboarding buddy, Sam Rivera, is your go-to for every small question, big or silly.',
-      'For anything about pay, benefits or forms, message Sarah in HR. For your laptop or accounts, post in #it-help.',
-    ],
-  },
-]
-
-export function ReadBody({ submit, footer, idPrefix, startDay, managerName }: BodyProps) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [read, setRead] = useState(false)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const check = () => {
-      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 8) setRead(true)
-    }
-    check() // Short screens with no scrolling needed.
-    const ro = new ResizeObserver(check)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-
-  return (
-    <form
-      noValidate
-      onSubmit={(e) => {
-        e.preventDefault()
-        if (read) submit()
-      }}
-    >
-      <div className="relative">
-        <div
-          ref={ref}
-          id={`${idPrefix}-guide`}
-          tabIndex={0}
-          role="region"
-          aria-label="Day-1 welcome guide"
-          onScroll={(e) => {
-            const el = e.currentTarget
-            if (el.scrollTop + el.clientHeight >= el.scrollHeight - 8) setRead(true)
-          }}
-          className="max-h-72 overflow-y-auto rounded-2xl bg-cream/70 px-5 py-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-leaf"
-        >
-          {guide(startDay, managerName).map((s, i) => (
-            <section key={s.title} className={i ? 'mt-5' : ''}>
-              <h3 className="font-serif text-[18px] font-semibold text-ink">{s.title}</h3>
-              {s.body.map((p) => (
-                <p key={p} className="mt-1.5 text-[15px] leading-relaxed text-ink-soft">
-                  {p}
-                </p>
-              ))}
-            </section>
-          ))}
-          <p className="mt-6 text-center text-[13px] text-leaf-deep">That’s it. See you {startDay} 🌱</p>
-        </div>
-        {!read && (
-          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-12 rounded-b-2xl bg-gradient-to-t from-paper to-transparent" />
-        )}
-      </div>
-      {footer({ label: 'I’ve read it', disabled: !read, disabledHint: 'Scroll to the end to finish.' })}
     </form>
   )
 }
