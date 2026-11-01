@@ -313,6 +313,59 @@ export function needsAttention(state: AppState): AttentionItem[] {
   return items
 }
 
+/** Approvals waiting on the manager, oldest first. */
+export function pendingApprovals(state: AppState): AccessRequest[] {
+  return state.requests
+    .filter((r) => r.status === 'waitingOnManager')
+    .sort((a, b) => a.requestedAt.localeCompare(b.requestedAt))
+}
+
+const ATTENTION_RANK: Record<HireStatus, number> = { blocked: 0, needsApproval: 1, notStarted: 2, onTrack: 3, done: 4 }
+
+/**
+ * Mateo's garden, most attention first (blocked, waiting on him, not started, on track).
+ * Ties go to whoever starts sooner.
+ */
+export function gardenOrder(state: AppState): Hire[] {
+  return [...state.hires].sort(
+    (a, b) =>
+      ATTENTION_RANK[hireStatus(state, a.id)] - ATTENTION_RANK[hireStatus(state, b.id)] ||
+      a.startDate.localeCompare(b.startDate),
+  )
+}
+
+/** "started 3 days ago", "starts in 2 days", "starts Monday". */
+export function startLabel(hire: Hire, today: ISODate): string {
+  const diff = daysBetween(today, hire.startDate)
+  if (diff < -1) return `started ${-diff} days ago`
+  if (diff === -1) return 'started yesterday'
+  if (diff === 0) return 'starts today'
+  if (diff === 1) return 'starts tomorrow'
+  if (diff === 2) return 'starts in 2 days'
+  if (diff <= 6) return `starts ${weekday(hire.startDate)}`
+  return `starts in ${diff} days`
+}
+
+/** The one status line on a garden card. */
+export function gardenStatusLine(state: AppState, hireId: string): string {
+  switch (hireStatus(state, hireId)) {
+    case 'blocked': {
+      const w = waitingFor(state, hireId).find((x) => x.blocked)!
+      return `Blocked: waiting on ${w.item.title}, ${w.daysWaiting} day${w.daysWaiting === 1 ? '' : 's'}.`
+    }
+    case 'needsApproval': {
+      const r = state.requests.find((x) => x.hireId === hireId && x.status === 'waitingOnManager')!
+      return `Waiting on your approval: ${r.resource.toLowerCase()}.`
+    }
+    case 'notStarted':
+      return 'Hasn’t started yet.'
+    case 'onTrack':
+      return 'On track.'
+    case 'done':
+      return 'Fully onboarded.'
+  }
+}
+
 // Coming up (all-set screen) --------------------------------------------------------
 
 export interface ComingUp {

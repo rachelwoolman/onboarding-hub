@@ -20,6 +20,10 @@ import {
   taskDue,
   waitingFor,
   dueDay,
+  gardenOrder,
+  gardenStatusLine,
+  pendingApprovals,
+  startLabel,
   activeRequest,
   comingUp,
 } from './selectors'
@@ -362,5 +366,40 @@ describe('time estimates', () => {
     for (const role of ['Engineering', 'Design'] as const) {
       for (const t of generatePlan(role, '2026-11-09', 'x').tasks) expect(allowed.has(t.minutes), `${role} ${t.key} ${t.minutes}`).toBe(true)
     }
+  })
+})
+
+describe("Mateo's garden", () => {
+  it('orders by attention and labels each hire', () => {
+    const s = seed()
+    expect(gardenOrder(s).map((h) => h.id)).toEqual(['priya', 'jordan', 'chloe'])
+    expect(gardenStatusLine(s, 'priya')).toBe('Blocked: waiting on GitHub access, 3 days.')
+    expect(gardenStatusLine(s, 'jordan')).toBe('Hasn’t started yet.')
+    const label = (id: string) => startLabel(s.hires.find((h) => h.id === id)!, s.today)
+    expect([label('priya'), label('jordan'), label('chloe')]).toEqual(['started 3 days ago', 'starts in 2 days', 'starts Monday'])
+  })
+
+  it('moves Chloe up while her request waits on Mateo, and back once approved', () => {
+    let s = completeKeys(seed(), C, ['confirm-details', 'dev-tools'])
+    expect(pendingApprovals(s)).toHaveLength(1)
+    expect(gardenOrder(s).map((h) => h.id)).toEqual(['priya', 'chloe', 'jordan'])
+    expect(gardenStatusLine(s, C)).toBe('Waiting on your approval: dev tools.')
+    s = reducer(s, { type: 'approveRequest', requestId: s.requests[0].id })
+    s = reducer(s, { type: 'approveRequest', requestId: s.requests[0].id }) // double click
+    expect(pendingApprovals(s)).toHaveLength(0)
+    expect(gardenStatusLine(s, C)).toBe('On track.')
+  })
+
+  it('records nudges and reminders, and a reset clears requests', () => {
+    let s = reducer(seed(), { type: 'nudgeIT', waitingId: 'priya:wait:github', at: '2026-11-06T18:00:00Z' })
+    s = reducer(s, { type: 'sendReminder', hireId: 'jordan', at: '2026-11-06T18:00:00Z' })
+    expect(s.waiting.find((w) => w.id === 'priya:wait:github')?.nudgedAt).toBeTruthy()
+    expect(s.hires.find((h) => h.id === 'jordan')?.remindedAt).toBeTruthy()
+    s = completeKeys(s, C, ['dev-tools'])
+    s = reducer(s, { type: 'approveRequest', requestId: s.requests[0].id })
+    s = reducer(s, { type: 'resetData', realToday: REAL_TODAY })
+    expect(s.requests).toHaveLength(0)
+    // A late "IT is ready" timer after reset finds nothing to change.
+    expect(reducer(s, { type: 'markRequestReady', requestId: 'req:chloe:dev-tools' })).toBe(s)
   })
 })
