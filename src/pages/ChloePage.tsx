@@ -14,6 +14,8 @@ import {
   phaseTasks,
   plantStage,
   waitingFor,
+  activeRequest,
+  comingUp,
 } from '../data/selectors'
 import { clearDraft, EDITING_KEY } from '../data/drafts'
 import { phaseTemplate } from '../data/templates'
@@ -23,7 +25,9 @@ import { FocusCard } from '../components/FocusCard'
 import { FooterLine } from '../components/FooterLine'
 import { JourneyPath } from '../components/JourneyPath'
 import { Plant } from '../components/Plant'
-import { Bloom, ChevronIcon, Chip, LeafIcon } from '../components/ui'
+import { Bloom, CheckIcon, ChevronIcon, Chip, ClockIcon, LeafIcon } from '../components/ui'
+import { ComingUpCard } from '../components/ComingUpCard'
+import { TrackerSteps } from '../components/RequestTracker'
 import { fill } from '../data/copy'
 
 interface Moment {
@@ -51,6 +55,10 @@ export function ChloePage() {
   // On the all-set screen the caption still reads "7 of 7 done", so the number never vanishes.
   const counts = page.kind === 'allSetForStart' ? { done: doneTasks.length, total: listTasks.length } : phaseCount
   const name = displayName(state, hireId)
+  const allSet = page.kind === 'allSetForStart'
+  const request = activeRequest(state, hireId)
+  // All-set screen: one small in-place panel at a time (completed list or tracker).
+  const [openPanel, setOpenPanel] = useState<'done' | 'request' | null>(null)
 
   // Editing a finished task happens in the card slot, one thing at a time.
   // Remembered for this tab, so a refresh mid-edit reopens the same card.
@@ -150,6 +158,7 @@ export function ChloePage() {
   if (!hire) return <EmptyPlan name="there" />
 
   const startDay = weekday(hire.startDate)
+  const copy = { day: startDay, manager: hire.managerName }
   const currentStop = focus ? stops[focus.stop] : undefined
 
   // Rendered inline (not as a nested component type) so it never remounts on re-render.
@@ -185,13 +194,41 @@ export function ChloePage() {
           <p className="mt-3 text-pretty text-[17px] leading-relaxed text-ink-soft sm:text-lg">
             <Subline page={page} minutes={minutes} startDay={startDay} started={state.today >= hire.startDate} />
           </p>
+          {allSet && request && (
+            <button
+              type="button"
+              onClick={() => setOpenPanel((p) => (p === 'request' ? null : 'request'))}
+              aria-expanded={openPanel === 'request'}
+              aria-controls="allset-request"
+              className="-ml-2.5 mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[14px] text-mist transition hover:bg-paper hover:text-ink"
+            >
+              <ClockIcon className="size-3.5" />
+              {requestLine(request.resource, request.status, hire.managerName)}
+              <ChevronIcon open={openPanel === 'request'} className="size-3" />
+            </button>
+          )}
         </div>
         <figure className="relative -mr-2 flex shrink-0 flex-col items-center sm:mr-0">
           <Plant stage={stage} className="size-24 sm:size-32" />
           {bloomKey > 0 && <Bloom key={bloomKey} />}
           {counts.total > 0 && (
             <figcaption className="-mt-1 text-xs text-ink-muted">
-              {counts.done} of {counts.total} done
+              {allSet ? (
+                <button
+                  type="button"
+                  onClick={() => setOpenPanel((p) => (p === 'done' ? null : 'done'))}
+                  aria-expanded={openPanel === 'done'}
+                  aria-controls="allset-done"
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 transition hover:bg-paper hover:text-ink"
+                >
+                  {counts.done} of {counts.total} done
+                  <ChevronIcon open={openPanel === 'done'} className="size-3" />
+                </button>
+              ) : (
+                <>
+                  {counts.done} of {counts.total} done
+                </>
+              )}
             </figcaption>
           )}
         </figure>
@@ -242,19 +279,37 @@ export function ChloePage() {
         </>
       )}
 
-      {page.kind === 'allSetForStart' && (
-        <div id="task-slot" className="mt-12 scroll-mt-6">
-          {editing ? (
-            editCard
-          ) : (
-            <>
-              <NextUpCard startDay={startDay} managerName={hire.managerName} />
-              <p className="mt-5 text-center text-[13px] text-ink-muted">
-                Week 1 and your first month will appear when you get there.
-              </p>
-            </>
+      {allSet && (
+        <>
+          {/* Small in-place details, closed by default. */}
+          <div className="expand" data-open={openPanel === 'done'} id="allset-done">
+            <div>
+              <ul className="mt-6 space-y-0.5 rounded-card bg-paper/70 p-2" aria-label="Finished before day 1">
+                {doneTasks.map((t) => (
+                  <li key={t.id} className="flex items-center gap-3 rounded-xl px-3 py-2 text-[14px]">
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-sage text-leaf">
+                      <CheckIcon className="size-3" />
+                    </span>
+                    <span className="text-ink-muted line-through decoration-ink-muted/40">{fill(t.title, copy)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          {request && (
+            <div className="expand" data-open={openPanel === 'request'} id="allset-request">
+              <div>
+                <div className="mt-6 rounded-card bg-mist-soft/60 px-4 pb-4 pt-1">
+                  <TrackerSteps request={request} managerName={hire.managerName} onResubmit={actions.resubmitRequest} />
+                </div>
+              </div>
+            </div>
           )}
-        </div>
+
+          <div id="task-slot" className="mt-10 scroll-mt-6 sm:mt-12">
+            {editing ? editCard : <ComingUpCard data={comingUp(state, hireId)} copy={copy} />}
+          </div>
+        </>
       )}
 
       {page.kind === 'fullyOnboarded' && (
@@ -270,7 +325,7 @@ export function ChloePage() {
       )}
 
       {/* Quiet footer line --------------------------------------------------------- */}
-      {page.kind !== 'empty' && page.kind !== 'fullyOnboarded' && (
+      {page.kind !== 'empty' && page.kind !== 'fullyOnboarded' && !allSet && (
         <div className="mt-10 sm:mt-12">
           <FooterLine
             done={doneTasks}
@@ -394,61 +449,11 @@ function UpNext({ titles }: { titles: string[] }) {
   )
 }
 
-/**
- * "Next up" on the all-set screen. Tapping it previews Day 1 in place: read-only,
- * nothing to check off, because none of it opens until the start date.
- */
-function NextUpCard({ startDay, managerName }: { startDay: string; managerName: string }) {
-  const [open, setOpen] = useState(false)
-  const rows = [
-    { time: '9:30', text: `Meet ${managerName} at the front desk` },
-    { time: '9:45', text: 'Pick up your badge and laptop' },
-    { time: '11:00', text: 'Security training, 20 min' },
-    { time: '1:00', text: 'Meet your onboarding buddy' },
-  ]
-  return (
-    <div className="animate-card-in rounded-card bg-paper shadow-card">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-controls="day1-preview"
-        className="flex w-full items-center gap-4 rounded-card px-6 py-5 text-left transition hover:bg-sage/20"
-      >
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-sage text-leaf-deep">
-          <svg viewBox="0 0 20 20" fill="none" className="size-5" aria-hidden="true">
-            <rect x="3" y="4.5" width="14" height="12" rx="3" stroke="currentColor" strokeWidth="1.6" />
-            <path d="M3 8.5h14M7 3v3M13 3v3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-xs font-semibold uppercase tracking-[0.1em] text-leaf-deep">
-            Next up: {startDay} 9:30
-          </span>
-          <span className="mt-0.5 block text-[17px] font-semibold text-ink">Meet your manager</span>
-        </span>
-        <ChevronIcon open={open} className="size-4 shrink-0 text-ink-muted" />
-      </button>
-      <div className="expand" data-open={open} id="day1-preview">
-        <div>
-          <div className="px-6 pb-6">
-            <div className="flex items-center justify-between border-t border-line pt-4">
-              <p className="text-[13px] font-semibold text-ink">Your Day 1</p>
-              <Chip tone="mist">Opens {startDay}</Chip>
-            </div>
-            <ol className="mt-3 space-y-1" aria-label={`Day 1 preview, opens ${startDay}`}>
-              {rows.map((r) => (
-                <li key={r.time} className="flex items-baseline gap-4 rounded-xl px-1 py-2 text-[15px]">
-                  <span className="w-12 shrink-0 text-right text-[13px] font-medium tabular-nums text-ink-muted">{r.time}</span>
-                  <span className="text-ink-soft">{r.text}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+/** One quiet line about an access request still in progress. */
+function requestLine(resource: string, status: string, manager: string): string {
+  if (status === 'approved') return `${resource} is approved. IT is setting it up.`
+  if (status === 'declined') return `${resource} needs a small change.`
+  return `${resource} is with ${manager}.`
 }
 
 function StartMovedBanner({ hire, onDismiss }: { hire: Hire; onDismiss: () => void }) {

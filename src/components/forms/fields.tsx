@@ -1,5 +1,4 @@
-import type { InputHTMLAttributes, ReactNode } from 'react'
-import { CheckIcon } from '../ui'
+import type { InputHTMLAttributes } from 'react'
 
 /** Amber, never red: a gentle note about what to fix. */
 export function FieldNote({ id, message }: { id: string; message: string | null }) {
@@ -63,88 +62,5 @@ export function TextField({ id, label, value, onChange, error, hint, optional, p
       )}
       <FieldNote id={noteId} message={error} />
     </div>
-  )
-}
-
-interface ChoiceOption {
-  value: string
-  label: string
-  hint?: string
-}
-
-function ChoiceMark({ checked }: { checked: boolean }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md transition duration-200 peer-focus-visible:ring-2 peer-focus-visible:ring-leaf peer-focus-visible:ring-offset-2 ${
-        checked ? 'bg-leaf text-paper' : 'bg-paper ring-1 ring-sage-deep'
-      }`}
-    >
-      {checked && <CheckIcon className="size-3" />}
-    </span>
-  )
-}
-
-function ChoiceGroup({
-  id,
-  legend,
-  options,
-  error,
-  children,
-  hint,
-}: {
-  id: string
-  legend: string
-  options: ChoiceOption[]
-  error: string | null
-  hint?: string
-  children: (o: ChoiceOption, i: number) => ReactNode
-}) {
-  return (
-    <fieldset aria-describedby={`${id}-note`}>
-      <legend className="mb-1.5 text-[14px] font-medium text-ink">{legend}</legend>
-      {hint && <p className="-mt-0.5 mb-2 text-[13px] text-ink-muted">{hint}</p>}
-      <div className={`space-y-1 rounded-2xl p-1.5 transition ${error ? 'bg-amber-soft/50' : 'bg-cream/60'}`}>
-        {options.map((o, i) => children(o, i))}
-      </div>
-      <FieldNote id={`${id}-note`} message={error} />
-    </fieldset>
-  )
-}
-
-const choiceRow = 'flex cursor-pointer items-start gap-3 rounded-xl px-3 py-2.5 text-[15px] text-ink transition hover:bg-paper'
-
-export function CheckboxGroup(props: {
-  id: string
-  legend: string
-  options: ChoiceOption[]
-  value: string[]
-  onChange: (v: string[]) => void
-  onBlur?: () => void
-  error: string | null
-  hint?: string
-}) {
-  const { id, value, onChange, onBlur } = props
-  const toggle = (v: string) => onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v])
-  return (
-    <ChoiceGroup {...props}>
-      {(o, i) => (
-        <label key={o.value} className={choiceRow}>
-          <input
-            id={i === 0 ? id : undefined}
-            type="checkbox"
-            checked={value.includes(o.value)}
-            onChange={() => toggle(o.value)}
-            onBlur={onBlur}
-            className="peer sr-only"
-          />
-          <ChoiceMark checked={value.includes(o.value)} />
-          <span>
-            {o.label}
-            {o.hint && <span className="block text-[13px] text-ink-muted">{o.hint}</span>}
-          </span>
-        </label>
-      )}
-    </ChoiceGroup>
   )
 }

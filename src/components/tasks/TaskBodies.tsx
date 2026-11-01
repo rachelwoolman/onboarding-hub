@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { email, githubUsername, phone, required } from '../../data/validation'
 import type { Task, TaskData } from '../../data/types'
-import { CheckboxGroup, TextField } from '../forms/fields'
+import { TextField } from '../forms/fields'
 import { useTaskForm } from '../forms/useTaskForm'
 import { fill } from '../../data/copy'
 import { CheckIcon } from '../ui'
@@ -31,7 +31,6 @@ export interface BodyProps {
 }
 
 const str = (v: unknown, fallback = '') => (typeof v === 'string' ? v : fallback)
-const arr = (v: unknown, fallback: string[] = []) => (Array.isArray(v) ? v : fallback)
 
 // 1. Contact details ---------------------------------------------------------------
 
@@ -160,76 +159,41 @@ export function StepsBody({ task, submit, footer, onToggleStep, idPrefix, startD
   )
 }
 
-// 6. Repo access request -----------------------------------------------------------------
+// 6. Access request ------------------------------------------------------------------------
 
-const MOCK_REPOS = [
-  { value: 'patient-web', label: 'brightpath/patient-web', hint: 'The patient app front end' },
-  { value: 'care-api', label: 'brightpath/care-api', hint: 'APIs for care teams' },
-  { value: 'infra-config', label: 'brightpath/infra-config', hint: 'Deploy and environment config' },
-]
-
+/** Code access: just the GitHub username; the manager approves. Other requests need nothing typed. */
 export function RequestBody({ task, idPrefix, draftKey, submit, footer, mode, managerName }: BodyProps) {
   const saved = task.data ?? {}
-  const isRepo = task.key === 'repo-access'
+  const needsGithub = task.key === 'code-access'
   const f = useTaskForm({
     draftKey,
     idPrefix,
-    initial: {
-      githubUsername: str(saved.githubUsername),
-      repos: arr(saved.repos, ['patient-web']),
-      reason: str(saved.reason, 'Onboarding to the patient app team and pairing on my first PR.'),
-    },
-    validate: (v) => ({
-      githubUsername: isRepo ? githubUsername(v.githubUsername) : null,
-      repos: isRepo && v.repos.length === 0 ? 'Pick at least one repo.' : null,
-      reason: !v.reason.trim() ? `A few words help ${managerName} approve quickly.` : null,
-    }),
+    initial: { githubUsername: str(saved.githubUsername) },
+    validate: (v) => ({ githubUsername: needsGithub ? githubUsername(v.githubUsername) : null }),
   })
   return (
     <form
       noValidate
       onSubmit={f.handleSubmit((v) =>
-        submit(isRepo ? { ...v, githubUsername: v.githubUsername.trim().replace(/^@/, '') } : { reason: v.reason.trim() }),
+        submit(needsGithub ? { githubUsername: v.githubUsername.trim().replace(/^@/, '') } : { requested: true }),
       )}
     >
-      <div className="space-y-5">
-        {isRepo && (
-          <>
-            <TextField
-              id={f.id('githubUsername')}
-              label="GitHub username"
-              prefix="@"
-              autoComplete="username"
-              autoCapitalize="none"
-              spellCheck={false}
-              placeholder="chloe-zhang"
-              value={f.values.githubUsername}
-              onChange={(v) => f.set('githubUsername', v)}
-              onBlur={() => f.touch('githubUsername')}
-              error={f.error('githubUsername')}
-            />
-            <CheckboxGroup
-              id={f.id('repos')}
-              legend="Which repos?"
-              options={MOCK_REPOS}
-              value={f.values.repos}
-              onChange={(v) => f.set('repos', v)}
-              onBlur={() => f.touch('repos')}
-              error={f.error('repos')}
-            />
-          </>
-        )}
+      {needsGithub && (
         <TextField
-          id={f.id('reason')}
-          label="Reason"
-          maxLength={120}
-          value={f.values.reason}
-          onChange={(v) => f.set('reason', v)}
-          onBlur={() => f.touch('reason')}
-          error={f.error('reason')}
+          id={f.id('githubUsername')}
+          label="GitHub username"
+          prefix="@"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          placeholder="chloe-zhang"
+          value={f.values.githubUsername}
+          onChange={(v) => f.set('githubUsername', v)}
+          onBlur={() => f.touch('githubUsername')}
+          error={f.error('githubUsername')}
         />
-      </div>
-      {footer({ label: mode === 'edit' ? 'Update request' : `Send to ${managerName}`, demoHint: true })}
+      )}
+      {footer({ label: mode === 'edit' ? 'Update request' : `Send to ${managerName}`, demoHint: needsGithub })}
     </form>
   )
 }
