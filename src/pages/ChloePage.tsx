@@ -210,7 +210,7 @@ export function ChloePage() {
           )}
         </div>
         <figure className="relative -mr-2 flex shrink-0 flex-col items-center sm:mr-0">
-          <Plant stage={stage} className="size-24 sm:size-32" />
+          <Plant stage={stage} className="size-28 sm:size-36" />
           {bloomKey > 0 && <Bloom key={bloomKey} />}
           {counts.total > 0 && (
             <figcaption className="-mt-1 text-xs text-ink-muted">

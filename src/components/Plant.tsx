@@ -12,31 +12,34 @@ interface PlantProps {
   title?: string
 }
 
+/** A leaf growing out from the stem at (60, y), pointing left or right. */
+function leaf(y: number, len: number, side: 'left' | 'right'): string {
+  const d = side === 'left' ? -1 : 1
+  const x = (k: number) => 60 + d * len * k
+  return `M60 ${y} C ${x(0.25)} ${y - len * 0.5}, ${x(0.8)} ${y - len * 0.55}, ${x(1)} ${y - len * 0.2} C ${x(0.75)} ${y + len * 0.2}, ${x(0.3)} ${y + len * 0.2}, 60 ${y} Z`
+}
+
 /**
- * Hand-built plant with four growth stages. Every part is always rendered and
- * fades/scales in from where it attaches, so moving between stages animates smoothly.
+ * Hand-built plant. Four stages, all growing from a small sprout (never a bare seed):
+ * sprout (0%), small plant (>0%), leafy (>=60%), in bloom (100%).
+ * Every part is always rendered and scales in from where it attaches, so stages animate.
  */
 export function Plant({ stage, size = 120, droop = false, className = '', title }: PlantProps) {
   const uid = useId().replace(/:/g, '')
   const rank = RANK[stage]
-  const show = (minRank: number, origin: string, extra = ''): CSSProperties => ({
+  const grow = (minRank: number, origin: string, scaleBelow = 0.2): CSSProperties => ({
     opacity: rank >= minRank ? 1 : 0,
-    transform: `${extra} scale(${rank >= minRank ? 1 : 0.2})`,
+    transform: `scale(${rank >= minRank ? 1 : scaleBelow})`,
     transformOrigin: origin,
   })
 
-  // Stem grows taller with each stage.
-  const stemTop = [92, 70, 50, 38][rank]
+  // Stem tops out higher at each stage.
+  const stemTop = [76, 58, 44, 34][rank]
+  const leafA = `url(#leaf-${uid})`
+  const leafB = `url(#leaf2-${uid})`
 
   return (
-    <svg
-      viewBox="0 0 120 120"
-      width={size}
-      height={size}
-      className={className}
-      role="img"
-      aria-label={title ?? `Plant: ${stage}`}
-    >
+    <svg viewBox="0 0 120 120" width={size} height={size} className={className} role="img" aria-label={title ?? `Plant: ${stage}`}>
       <defs>
         <radialGradient id={`glow-${uid}`} cx="50%" cy="58%" r="50%">
           <stop offset="0%" stopColor="#dcebd7" stopOpacity="0.95" />
@@ -54,35 +57,17 @@ export function Plant({ stage, size = 120, droop = false, className = '', title 
       </defs>
 
       {/* Soft glow, brighter as the plant grows. */}
-      <circle
-        cx="60"
-        cy="66"
-        r="56"
-        fill={`url(#glow-${uid})`}
-        style={{ opacity: 0.55 + rank * 0.15, transition: 'opacity 900ms' }}
-      />
+      <circle cx="60" cy="64" r="56" fill={`url(#glow-${uid})`} style={{ opacity: 0.6 + rank * 0.13, transition: 'opacity 900ms' }} />
 
       {/* Soil */}
-      <ellipse cx="60" cy="98" rx="30" ry="7" fill="#c9a582" opacity="0.9" />
-      <ellipse cx="60" cy="96.5" rx="24" ry="4" fill="#d8bb9c" />
-
-      {/* Seed, visible only before anything has grown. */}
-      <g
-        className="plant-part"
-        style={{ opacity: rank === 0 ? 1 : 0, transform: `scale(${rank === 0 ? 1 : 0.6})`, transformOrigin: 'center' }}
-      >
-        <ellipse cx="60" cy="93" rx="7" ry="5" fill="#a87b55" transform="rotate(-18 60 93)" />
-        <path d="M56 91.5 q4 -2.5 8 0" stroke="#8a6040" strokeWidth="1" fill="none" strokeLinecap="round" />
-      </g>
+      <ellipse cx="60" cy="99" rx="31" ry="7" fill="#c9a582" opacity="0.9" />
+      <ellipse cx="60" cy="97.5" rx="25" ry="4" fill="#d8bb9c" />
 
       {/* Everything above the soil sways gently from the base. */}
-      <g
-        className={droop ? '' : 'animate-sway'}
-        style={{ transformOrigin: '60px 96px', transformBox: 'view-box' }}
-      >
+      <g className={droop ? '' : 'animate-sway'} style={{ transformOrigin: '60px 97px', transformBox: 'view-box' }}>
         <g
           style={{
-            transformOrigin: '60px 96px',
+            transformOrigin: '60px 97px',
             transformBox: 'view-box',
             transform: droop ? 'rotate(14deg)' : 'none',
             filter: droop ? 'saturate(0.6)' : 'none',
@@ -91,62 +76,38 @@ export function Plant({ stage, size = 120, droop = false, className = '', title 
         >
           {/* Stem */}
           <path
-            d={`M60 96 C 61 ${(96 + stemTop) / 2 + 6}, 58 ${(96 + stemTop) / 2 - 6}, 60 ${stemTop}`}
+            d={`M60 97 C 61.5 ${(97 + stemTop) / 2 + 6}, 58.5 ${(97 + stemTop) / 2 - 6}, 60 ${stemTop}`}
             stroke="#3f8a5d"
-            strokeWidth="3"
+            strokeWidth={2.6 + rank * 0.4}
             strokeLinecap="round"
             fill="none"
-            style={{ opacity: rank >= 1 ? 1 : 0, transition: 'd 900ms var(--ease-soft), opacity 500ms' }}
           />
 
-          {/* Sprout: two first leaves at the top of a young stem. */}
-          <path
-            className="plant-part"
-            d="M60 72 C 52 62, 40 62, 34 68 C 42 76, 54 76, 60 72 Z"
-            fill={`url(#leaf-${uid})`}
-            style={{
-              ...show(1, '100% 60%'),
-              transform: `translateY(${rank >= 2 ? 10 : 0}px) scale(${rank >= 1 ? 1 : 0.2})`,
-            }}
-          />
-          <path
-            className="plant-part"
-            d="M60 70 C 66 58, 80 56, 88 62 C 80 72, 68 74, 60 70 Z"
-            fill={`url(#leaf2-${uid})`}
-            style={{
-              ...show(1, '0% 70%'),
-              transform: `translateY(${rank >= 2 ? 6 : 0}px) scale(${rank >= 1 ? 1 : 0.2})`,
-            }}
-          />
+          {/* First pair: two tiny leaves on the sprout, full size from stage 1. */}
+          <g className="plant-part" style={{ transformOrigin: '60px 80px', transformBox: 'view-box', transform: `scale(${rank >= 1 ? 1 : 0.62})` }}>
+            <path d={leaf(80, 26, 'left')} fill={leafA} />
+            <path d={leaf(78, 26, 'right')} fill={leafB} />
+          </g>
 
-          {/* Leafy: two more leaves higher up. */}
-          <path
-            className="plant-part"
-            d="M60 58 C 54 48, 44 46, 38 50 C 44 58, 54 60, 60 58 Z"
-            fill={`url(#leaf2-${uid})`}
-            style={show(2, '100% 80%')}
-          />
-          <path
-            className="plant-part"
-            d="M60 54 C 64 44, 74 42, 80 46 C 76 54, 66 57, 60 54 Z"
-            fill={`url(#leaf-${uid})`}
-            style={show(2, '0% 80%')}
-          />
+          {/* Stage 1: a second, higher pair. */}
+          <path className="plant-part" d={leaf(62, 22, 'left')} fill={leafB} style={grow(1, '100% 60%')} />
+          <path className="plant-part" d={leaf(60, 23, 'right')} fill={leafA} style={grow(1, '0% 60%')} />
 
-          {/* Bloom: a soft five-petal flower. */}
-          <g className="plant-part" style={show(3, '50% 100%')}>
+          {/* Stage 2: leafy, two more pairs. */}
+          <path className="plant-part" d={leaf(50, 19, 'left')} fill={leafA} style={grow(2, '100% 70%')} />
+          <path className="plant-part" d={leaf(47, 20, 'right')} fill={leafB} style={grow(2, '0% 70%')} />
+          <path className="plant-part" d={leaf(70, 18, 'right')} fill={leafB} style={grow(2, '0% 70%')} />
+
+          {/* Stage 3: a soft five-petal flower and a bud. */}
+          <g className="plant-part" style={grow(3, '50% 100%')}>
             {[0, 72, 144, 216, 288].map((r) => (
-              <ellipse
-                key={r}
-                cx="60"
-                cy="30"
-                rx="5.5"
-                ry="8"
-                fill="#f2c4b3"
-                transform={`rotate(${r} 60 38)`}
-              />
+              <ellipse key={r} cx="60" cy="25" rx="6.5" ry="9.5" fill="#f2c4b3" transform={`rotate(${r} 60 34)`} />
             ))}
-            <circle cx="60" cy="38" r="4.5" fill="#f0b45b" />
+            <circle cx="60" cy="34" r="5" fill="#f0b45b" />
+          </g>
+          <g className="plant-part" style={grow(3, '0% 100%')}>
+            <path d="M60 56 C 66 52, 72 48, 76 42" stroke="#3f8a5d" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+            <ellipse cx="77" cy="40" rx="3.6" ry="5" fill="#f2c4b3" transform="rotate(30 77 40)" />
           </g>
         </g>
       </g>
