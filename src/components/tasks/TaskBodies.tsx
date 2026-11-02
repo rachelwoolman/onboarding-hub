@@ -176,12 +176,12 @@ export function StepsBody({ task, submit, footer, onToggleStep, idPrefix, startD
                   <span
                     aria-hidden="true"
                     className={`flex size-5 shrink-0 items-center justify-center rounded-md transition duration-300 peer-focus-visible:ring-2 peer-focus-visible:ring-leaf peer-focus-visible:ring-offset-2 ${
-                      checked ? 'bg-ink-muted/60 text-paper' : 'bg-paper ring-1 ring-sage-deep'
+                      checked ? 'bg-leaf text-paper' : 'bg-paper ring-1 ring-sage-deep'
                     }`}
                   >
                     {checked && <CheckIcon className="size-3.5" />}
                   </span>
-                  {/* Done steps go quiet grey, never struck through. */}
+                  {/* Done steps: green check, text goes quiet grey, never struck through. */}
                   <span className={`transition-colors duration-300 ${checked ? 'text-ink-muted' : 'text-ink'}`}>{label}</span>
                 </label>
               </li>
