@@ -180,16 +180,19 @@ In the demo, Chloe is the only person who can need Mateo. Everyone else is calm.
 3. "New hires" (small, sentence case): one card per hire with a plant, name, role, start info,
    a small % number and one status line. Chloe is always first. No "Check in" button.
    - Chloe uses her REAL store state. Before she sends anything: calm card, real %, seed or sprout
-     plant, "Hasn't started yet, starts Monday" or "On track, starts Monday". While her dev tools
+     plant, "Hasn't started yet · Starts Monday" or "On track · Starts Monday". While her dev tools
      request is pending: amber-tinted card, flowering plant (half-open flower), "Waiting on your
      approval: dev tools (GitHub, Jira)", one quiet line "Done: Confirmed details, I-9 and W-4,
      Slack · Open: Dev tools (needs your approval)", and Approve plus Decline on the card. After
      Approve: full bloom, "Dev tools approved", and her tracker goes Approved, then Ready.
-   - Priya Nair, Senior engineer, 81%, leafy plant, "On track, started 3 days ago".
-   - Jordan Lee, Product engineer, 50%, small plant, "On track, starts in 2 days".
-   - Priya and Jordan cards are slightly muted, with no amber and no actions.
+   - Priya Nair, Senior engineer, started 3 days ago, 56%, small plant, "On track · Working through
+     Week 1". No blocker of any kind.
+   - Jordan Lee, Product engineer, 25% (1 of 4 pre-start tasks), small sprout, "On track · Starts
+     in 2 days".
+   - Only Chloe's card may ever show amber or an action. Priya and Jordan are slightly muted, with
+     no amber, no "blocked"/"hasn't started"/"overdue" wording, and nothing for Mateo to do.
 4. Every card has a quiet "Tasks" toggle (collapsed on load and after Reset): every task with
-   owner, status and due (an item waiting on Mateo or overdue shows in amber).
+   owner, status and due (on Chloe's card only, an item waiting on Mateo or overdue shows in amber).
 5. States: after Approve the strip disappears with toast "Approved. Chloe has been notified.";
    after Decline, toast "Sent back to Chloe with your note." and Chloe sees the note with "Fix and
    resubmit"; empty list "No new hires right now."
