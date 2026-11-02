@@ -328,7 +328,8 @@ describe('coming up', () => {
     const s = seed()
     const eng = comingUp(s, C)
     expect(eng.guide?.sections.map((x) => x.title)).toEqual(['Arriving', 'Parking and your badge', 'What to wear', 'Who to ask'])
-    expect(eng.guide?.from).toBe('Sarah, People team')
+    expect(eng.guide?.closing).toBe('Best,')
+    expect(eng.guide?.from).toBe('Sarah')
     const words = [eng.guide!.intro, ...eng.guide!.sections.map((x) => x.body), eng.guide!.signoff].join(' ').split(/\s+/).length
     expect(words).toBeGreaterThan(150)
     expect(words).toBeLessThan(250)

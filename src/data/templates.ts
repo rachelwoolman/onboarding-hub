@@ -34,6 +34,8 @@ export interface FirstDayGuide {
   intro: string
   sections: { title: string; body: string }[]
   signoff: string
+  /** A short email-style closing, e.g. "Best," */
+  closing: string
   from: string
 }
 
@@ -207,7 +209,8 @@ function firstDayGuide(buddy: string, buddyPlan: string): FirstDayGuide {
       },
     ],
     signoff: 'We’re so glad you’re joining us. See you {day}!',
-    from: 'Sarah, People team',
+    closing: 'Best,',
+    from: 'Sarah',
   }
 }
 

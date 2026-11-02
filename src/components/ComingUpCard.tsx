@@ -79,7 +79,11 @@ export function ComingUpCard({ data, copy }: { data: ComingUp; copy: CopyContext
                   </section>
                 ))}
                 <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">{fill(data.guide.signoff, copy)}</p>
-                <p className="mt-1 text-[14px] text-ink-muted">{data.guide.from}</p>
+                <p className="mt-4 text-[15px] leading-relaxed text-ink-soft">
+                  {data.guide.closing}
+                  <br />
+                  {data.guide.from}
+                </p>
               </>
             ) : (
               <p className="text-[15px] text-ink-muted">Your first-day note is on its way.</p>

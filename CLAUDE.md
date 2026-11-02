@@ -151,7 +151,7 @@ Finished phases disappear.
   - One "Coming up" card with tab chips Monday / Week 1 / First month (Monday selected). All
     read-only, no checkboxes or completing buttons. Monday is a ~200-word first-day note written
     like a warm HR email (intro; Arriving; Parking and your badge; What to wear; Who to ask;
-    signed "Sarah, People team") plus a mock "Add to calendar" (toast). Week 1 lists the
+    signed off "Best, Sarah") plus a mock "Add to calendar" (toast). Week 1 lists the
     template's week-1 tasks with time estimates; First month its month-1 tasks with "by day N".
     All of it comes from the role template and generated plan, so the Design role shows different
     content.
