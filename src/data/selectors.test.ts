@@ -380,6 +380,7 @@ describe("Mateo's new hires", () => {
     expect(managerPlantStage(s, 'priya')).toBe('leafy')
     expect(managerPlantStage(s, 'jordan')).toBe('sprout')
     expect(managerPlantStage(s, C)).toBe('seed')
+    expect(finishedSummary(s, C)).toEqual({ done: [], open: 'Your details' })
     expect(pendingApprovals(s)).toHaveLength(0)
     const label = (id: string) => startLabel(s.hires.find((h) => h.id === id)!, s.today)
     expect([label('priya'), label('jordan'), label('chloe')]).toEqual(['started 3 days ago', 'starts in 2 days', 'starts Monday'])

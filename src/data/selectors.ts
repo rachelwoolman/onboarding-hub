@@ -360,7 +360,9 @@ export function finishedSummary(state: AppState, hireId: string): { done: string
   const hire = getHire(state, hireId)
   const pending = state.requests.find((r) => r.hireId === hireId && r.status === 'waitingOnManager')
   const ctx = { day: hire ? weekday(hire.startDate) : '', manager: hire?.managerName ?? '' }
-  const label = (t: Task) => (t.doneAs ?? t.short).replaceAll('{day}', ctx.day).replaceAll('{manager}', ctx.manager)
+  const fillCtx = (text: string) => text.replaceAll('{day}', ctx.day).replaceAll('{manager}', ctx.manager)
+  // Finished tasks read in the past ("Confirmed details"); the open one uses its short name.
+  const label = (t: Task) => fillCtx(t.doneAs ?? t.short)
   const phase = getCurrentPhase(state, hireId) ?? 'preStart'
   const tasks = phaseTasks(state, hireId, phase).sort((a, b) => a.order - b.order)
   const done = tasks.filter((t) => isDone(t) && t.id !== pending?.taskId).map(label)
@@ -368,7 +370,7 @@ export function finishedSummary(state: AppState, hireId: string): { done: string
     ? `${pending.resource} (needs your approval)`
     : (() => {
         const next = getFocusTask(state, hireId)
-        return next ? label(next) : null
+        return next ? fillCtx(next.short) : null
       })()
   return { done, open }
 }
