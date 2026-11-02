@@ -20,8 +20,8 @@ export function createSeed(realToday: ISODate = toISODate(new Date())): AppState
       role: 'Engineering',
       startDate: chloeStart,
       managerName: 'Mateo',
-      // Fake details "on file from HR" (555-01xx numbers and example.com are reserved for fiction).
-      onFile: { firstName: 'Chloe', lastName: 'Zhang', phone: '(555) 010-1234', email: 'chloe.zhang@example.com' },
+      // Fake details "on file from HR" (555-01xx numbers are reserved for fiction).
+      onFile: { firstName: 'Chloe', lastName: 'Zhang', phone: '(555) 010-1234', email: 'chloe.zhang@gmail.com' },
     },
     {
       id: 'priya',
@@ -31,7 +31,7 @@ export function createSeed(realToday: ISODate = toISODate(new Date())): AppState
       role: 'Engineering',
       startDate: addDays(today, -3),
       managerName: 'Mateo',
-      onFile: { firstName: 'Priya', lastName: 'Nair', phone: '(555) 010-2468', email: 'priya.nair@example.com' },
+      onFile: { firstName: 'Priya', lastName: 'Nair', phone: '(555) 010-2468', email: 'priya.nair@gmail.com' },
     },
     {
       id: 'jordan',
@@ -41,7 +41,7 @@ export function createSeed(realToday: ISODate = toISODate(new Date())): AppState
       role: 'Engineering',
       startDate: addDays(today, 2),
       managerName: 'Mateo',
-      onFile: { firstName: 'Jordan', lastName: 'Lee', phone: '(555) 010-1357', email: 'jordan.lee@example.com' },
+      onFile: { firstName: 'Jordan', lastName: 'Lee', phone: '(555) 010-1357', email: 'jordan.lee@gmail.com' },
     },
   ]
 
