@@ -231,7 +231,8 @@ function HireCard({
       .filter((t) => phaseIsOpen(hire, t.phase, state.today))
       .sort((a, b) => a.order - b.order)
       .map((t) => {
-        const overdue = isOverdue(hire, t, state.today)
+        // Only the primary hire's card may ever show amber or "Overdue".
+        const overdue = primary && isOverdue(hire, t, state.today)
         const waitingOnMe = pending?.taskId === t.id
         return {
           id: t.id,
@@ -246,9 +247,9 @@ function HireCard({
       id: w.item.id,
       title: w.item.title,
       owner: w.item.owner,
-      status: w.blocked ? 'Blocked' : 'In progress',
+      status: 'In progress',
       due: dayLabel(w.item.readyOn, state.today),
-      warn: w.blocked,
+      warn: false,
     })),
   ]
 

@@ -401,18 +401,15 @@ export function gardenStatusLine(state: AppState, hireId: string): string {
   }
   if (req?.status === 'declined') return `${req.resource} sent back for a change`
   if (req && (req.status === 'approved' || req.status === 'ready')) return `${req.resource} approved`
-  switch (hireStatus(state, hireId)) {
-    case 'blocked': {
-      const w = waitingFor(state, hireId).find((x) => x.blocked)!
-      return `Blocked: waiting on ${w.item.title}, ${w.daysWaiting} day${w.daysWaiting === 1 ? '' : 's'}`
-    }
-    case 'notStarted':
-      return `Hasn’t started yet, ${when}`
-    case 'done':
-      return 'Fully onboarded'
-    default:
-      return `On track, ${when}`
-  }
+  // Calm, factual lines: nothing here should read as something the manager must fix.
+  const When = when.charAt(0).toUpperCase() + when.slice(1)
+  const status = hireStatus(state, hireId)
+  if (status === 'done') return 'Fully onboarded'
+  if (status === 'notStarted') return `Hasn’t started yet · ${When}`
+  const phase = getCurrentPhase(state, hireId)
+  if (hire && phase && phase !== 'preStart' && dayOfOnboarding(hire, state.today) >= 0)
+    return `On track · Working through ${phaseTemplate(hire.role, phase).label}`
+  return `On track · ${When}`
 }
 
 // Coming up (all-set screen) --------------------------------------------------------

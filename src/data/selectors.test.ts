@@ -213,9 +213,9 @@ describe('later phases', () => {
 describe('manager view data', () => {
   it('matches the garden story', () => {
     const s = seed()
-    expect(progressPercent(s, 'priya')).toBe(81)
+    expect(progressPercent(s, 'priya')).toBe(56)
     expect(hireStatus(s, 'priya')).toBe('onTrack')
-    expect(progressPercent(s, 'jordan')).toBe(50)
+    expect(progressPercent(s, 'jordan')).toBe(25)
     expect(hireStatus(s, 'jordan')).toBe('onTrack')
     // Chloe hasn't done anything yet; one task later she's on track.
     expect(hireStatus(s, C)).toBe('notStarted')
@@ -374,10 +374,16 @@ describe("Mateo's new hires", () => {
   it('puts Chloe first; Priya and Jordan are calm and on track', () => {
     const s = seed()
     expect(gardenOrder(s).map((h) => h.id)).toEqual(['chloe', 'priya', 'jordan'])
-    expect(gardenStatusLine(s, 'priya')).toBe('On track, started 3 days ago')
-    expect(gardenStatusLine(s, 'jordan')).toBe('On track, starts in 2 days')
-    expect(gardenStatusLine(s, C)).toBe('Hasn’t started yet, starts Monday')
-    expect(managerPlantStage(s, 'priya')).toBe('leafy')
+    expect(gardenStatusLine(s, 'priya')).toBe('On track · Working through Week 1')
+    expect(gardenStatusLine(s, 'jordan')).toBe('On track · Starts in 2 days')
+    expect(gardenStatusLine(s, C)).toBe('Hasn’t started yet · Starts Monday')
+    // Nothing on Priya's or Jordan's cards asks Mateo to act.
+    for (const id of ['priya', 'jordan']) {
+      expect(hireStatus(s, id)).toBe('onTrack')
+      expect(waitingFor(s, id).some((w) => w.blocked)).toBe(false)
+      expect(gardenStatusLine(s, id)).not.toMatch(/blocked|hasn’t started|waiting/i)
+    }
+    expect(managerPlantStage(s, 'priya')).toBe('sprout')
     expect(managerPlantStage(s, 'jordan')).toBe('sprout')
     expect(managerPlantStage(s, C)).toBe('seed')
     expect(finishedSummary(s, C)).toEqual({ done: [], open: 'Your details' })

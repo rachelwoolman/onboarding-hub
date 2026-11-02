@@ -63,14 +63,14 @@ export function createSeed(realToday: ISODate = toISODate(new Date())): AppState
 
   // Chloe: nothing done yet; she opens the page fresh.
 
-  // Priya: on track, started 3 days ago. Pre-start, day 1 and week 1 done (13 of 16 = 81%).
+  // Priya: on track, started 3 days ago, working through week 1 (9 of 16 = 56%).
   const priyaDone = tasks
-    .filter((t) => t.hireId === 'priya' && ['preStart', 'day1', 'week1'].includes(t.phase))
+    .filter((t) => t.hireId === 'priya' && ['preStart', 'day1'].includes(t.phase))
     .map((t) => t.key)
-  markDone('priya', priyaDone)
+  markDone('priya', [...priyaDone, 'local-dev'])
 
-  // Jordan: on track, starts in 2 days. Half of pre-start done (2 of 4 = 50%).
-  markDone('jordan', ['confirm-details', 'i9-w4'])
+  // Jordan: on track, starts in 2 days. One of 4 pre-start tasks done (25%).
+  markDone('jordan', ['confirm-details'])
 
   return {
     version: 1,
