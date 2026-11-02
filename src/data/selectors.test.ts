@@ -22,6 +22,8 @@ import {
   dueDay,
   gardenOrder,
   gardenStatusLine,
+  finishedSummary,
+  managerPlantStage,
   pendingApprovals,
   startLabel,
   activeRequest,
@@ -211,11 +213,10 @@ describe('later phases', () => {
 describe('manager view data', () => {
   it('matches the garden story', () => {
     const s = seed()
-    expect(progressPercent(s, 'priya')).toBe(50)
-    expect(hireStatus(s, 'priya')).toBe('blocked')
-    expect(waitingFor(s, 'priya')[0].daysWaiting).toBe(3)
-    expect(progressPercent(s, 'jordan')).toBe(0)
-    expect(hireStatus(s, 'jordan')).toBe('notStarted')
+    expect(progressPercent(s, 'priya')).toBe(81)
+    expect(hireStatus(s, 'priya')).toBe('onTrack')
+    expect(progressPercent(s, 'jordan')).toBe(50)
+    expect(hireStatus(s, 'jordan')).toBe('onTrack')
     // Chloe hasn't done anything yet; one task later she's on track.
     expect(hireStatus(s, C)).toBe('notStarted')
     expect(hireStatus(completeKeys(s, C, ['confirm-details']), C)).toBe('onTrack')
@@ -369,36 +370,52 @@ describe('time estimates', () => {
   })
 })
 
-describe("Mateo's garden", () => {
-  it('orders by attention and labels each hire', () => {
+describe("Mateo's new hires", () => {
+  it('puts Chloe first; Priya and Jordan are calm and on track', () => {
     const s = seed()
-    expect(gardenOrder(s).map((h) => h.id)).toEqual(['priya', 'jordan', 'chloe'])
-    expect(gardenStatusLine(s, 'priya')).toBe('Blocked: waiting on GitHub access, 3 days.')
-    expect(gardenStatusLine(s, 'jordan')).toBe('Hasn’t started yet.')
+    expect(gardenOrder(s).map((h) => h.id)).toEqual(['chloe', 'priya', 'jordan'])
+    expect(gardenStatusLine(s, 'priya')).toBe('On track, started 3 days ago')
+    expect(gardenStatusLine(s, 'jordan')).toBe('On track, starts in 2 days')
+    expect(gardenStatusLine(s, C)).toBe('Hasn’t started yet, starts Monday')
+    expect(managerPlantStage(s, 'priya')).toBe('leafy')
+    expect(managerPlantStage(s, 'jordan')).toBe('sprout')
+    expect(managerPlantStage(s, C)).toBe('seed')
+    expect(pendingApprovals(s)).toHaveLength(0)
     const label = (id: string) => startLabel(s.hires.find((h) => h.id === id)!, s.today)
     expect([label('priya'), label('jordan'), label('chloe')]).toEqual(['started 3 days ago', 'starts in 2 days', 'starts Monday'])
   })
 
-  it('moves Chloe up while her request waits on Mateo, and back once approved', () => {
-    let s = completeKeys(seed(), C, ['confirm-details', 'dev-tools'])
+  it('fast-forwards Chloe to a pending request, then blooms on approval', () => {
+    let s = reducer(seed(), { type: 'fastForwardPrimary', at: '2026-11-06T18:00:00Z' })
+    expect(progressPercent(s, C)).toBe(100)
+    expect(hirePageState(s, C)).toEqual({ kind: 'allSetForStart' })
     expect(pendingApprovals(s)).toHaveLength(1)
-    expect(gardenOrder(s).map((h) => h.id)).toEqual(['priya', 'chloe', 'jordan'])
-    expect(gardenStatusLine(s, C)).toBe('Waiting on your approval: dev tools.')
+    expect(s.requests[0].details).toEqual({ tools: ['github', 'jira'] })
+    expect(gardenStatusLine(s, C)).toBe('Waiting on your approval: dev tools (GitHub, Jira)')
+    expect(managerPlantStage(s, C)).toBe('flowering')
+    expect(finishedSummary(s, C)).toEqual({ done: ['Confirmed details', 'I-9 and W-4', 'Slack'], open: 'Dev tools (needs your approval)' })
+    // Fast-forward again does nothing more.
+    expect(reducer(s, { type: 'fastForwardPrimary' }).requests).toHaveLength(1)
+
     s = reducer(s, { type: 'approveRequest', requestId: s.requests[0].id })
     s = reducer(s, { type: 'approveRequest', requestId: s.requests[0].id }) // double click
+    expect(s.requests[0].status).toBe('approved')
+    expect(gardenStatusLine(s, C)).toBe('Dev tools approved')
+    expect(managerPlantStage(s, C)).toBe('bloom')
     expect(pendingApprovals(s)).toHaveLength(0)
-    expect(gardenStatusLine(s, C)).toBe('On track.')
+    s = reducer(s, { type: 'markRequestReady', requestId: s.requests[0].id })
+    expect(s.requests[0].status).toBe('ready')
+    expect(managerPlantStage(s, C)).toBe('bloom')
   })
 
-  it('records nudges and reminders, and a reset clears requests', () => {
-    let s = reducer(seed(), { type: 'nudgeIT', waitingId: 'priya:wait:github', at: '2026-11-06T18:00:00Z' })
-    s = reducer(s, { type: 'sendReminder', hireId: 'jordan', at: '2026-11-06T18:00:00Z' })
-    expect(s.waiting.find((w) => w.id === 'priya:wait:github')?.nudgedAt).toBeTruthy()
-    expect(s.hires.find((h) => h.id === 'jordan')?.remindedAt).toBeTruthy()
-    s = completeKeys(s, C, ['dev-tools'])
-    s = reducer(s, { type: 'approveRequest', requestId: s.requests[0].id })
+  it('a decline keeps the plant from blooming and Reset restores everything', () => {
+    let s = reducer(seed(), { type: 'fastForwardPrimary' })
+    s = reducer(s, { type: 'declineRequest', requestId: s.requests[0].id, note: 'Add the cloud console too' })
+    expect(gardenStatusLine(s, C)).toBe('Dev tools sent back for a change')
+    expect(managerPlantStage(s, C)).toBe('bloom') // 100% done, nothing pending
     s = reducer(s, { type: 'resetData', realToday: REAL_TODAY })
     expect(s.requests).toHaveLength(0)
+    expect(phaseCounts(s, C).done).toBe(0)
     // A late "IT is ready" timer after reset finds nothing to change.
     expect(reducer(s, { type: 'markRequestReady', requestId: 'req:chloe:dev-tools' })).toBe(s)
   })

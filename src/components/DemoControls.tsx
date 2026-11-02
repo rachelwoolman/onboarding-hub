@@ -11,6 +11,8 @@ export function DemoControls() {
   const day = daysBetween(hire.startDate, state.today)
   const next = getNextLockedPhase(state, hire.id)
   const beforeStart = day < 0
+  // Finishes her pre-start tasks and sends the request, so the Manager view can be shown fast.
+  const canFastForward = state.tasks.some((t) => t.hireId === hire.id && t.phase === 'preStart' && !t.doneAt)
 
   let jumpLabel: string | null
   if (beforeStart) jumpLabel = `Jump to ${weekday(hire.startDate)}`
@@ -36,6 +38,11 @@ export function DemoControls() {
             onClick={() => (beforeStart ? actions.jumpToStartDay() : actions.jumpToNextPhase())}
           >
             {jumpLabel}
+          </button>
+        )}
+        {canFastForward && (
+          <button type="button" className={btn} onClick={actions.fastForwardPrimary}>
+            Fast-forward {hire.firstName}
           </button>
         )}
         <button

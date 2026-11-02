@@ -12,6 +12,7 @@ export interface TaskTemplate {
   portal?: PortalHandoff
   title: string
   short: string
+  doneAs?: string
   why: string
   minutes: number
   dueOffset: number
@@ -69,6 +70,7 @@ const confirmDetails: TaskTemplate = {
   kind: 'form',
   title: 'Confirm your name and contact details',
   short: 'Your details',
+  doneAs: 'Confirmed details',
   why: 'So IT can create your BrightPath email and accounts.',
   minutes: 2,
   dueOffset: -3,
@@ -102,6 +104,7 @@ function slackInvite(teamChannel: string): TaskTemplate {
     kind: 'steps',
     title: 'Accept your Slack invite',
     short: 'Slack invite',
+    doneAs: 'Slack',
     why: 'Your team says hi here first.',
     minutes: 5,
     dueOffset: -1,
