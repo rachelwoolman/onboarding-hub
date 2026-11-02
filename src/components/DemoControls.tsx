@@ -1,4 +1,4 @@
-import { addDays, daysBetween, weekday } from '../data/dates'
+import { daysBetween, weekday } from '../data/dates'
 import { getHire, getNextLockedPhase } from '../data/selectors'
 import { useStore } from '../state/store'
 
@@ -45,13 +45,6 @@ export function DemoControls() {
             Fast-forward {hire.firstName}
           </button>
         )}
-        <button
-          type="button"
-          className={btn}
-          onClick={() => actions.moveStartDate(hire.id, addDays(hire.startDate, 1))}
-        >
-          Move start +1 day
-        </button>
         <button type="button" className={btn} onClick={actions.resetData}>
           Reset data
         </button>

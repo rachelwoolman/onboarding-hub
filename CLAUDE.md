@@ -85,7 +85,7 @@ organized and crafted than the mockups:
 Nothing is pre-completed: she starts at zero.
 Your details (2 min): Confirm your name and contact details (2 min, unblocks IT, DO THIS FIRST,
   due today). Name, mobile phone and personal email are already on file from HR (fake:
-  Chloe Zhang, (555) 010-1234, chloe.zhang@example.com). Why-line: "So IT can create your
+  Chloe Zhang, (555) 010-1234, chloe.zhang@gmail.com). Why-line: "So IT can create your
   BrightPath email and accounts."
 Paperwork (15 min): Complete I-9 and W-4 (15 min, due Sunday, handed off to the HR portal).
 Connect with your team (10 min): Accept your Slack invite (5, Sunday, has 4 steps: 1. Open the
@@ -204,8 +204,8 @@ Vite + React + TypeScript + Tailwind v4. No backend. Persist to localStorage. Re
 state. generatePlan(role, startDate) with Engineering (full) and Design (smaller, different tasks)
 templates, to prove role-based plans. Plants: hand-built inline SVGs, no image assets.
 Tiny "Demo controls" footer: Jump to Monday, Fast-forward Chloe (finishes her pre-start tasks and
-sends the dev tools request in one click, so the Manager view can be shown quickly), Move start
-+1 day, Reset data (REQUIRED; restores everything). Works at phone width.
+sends the dev tools request in one click, so the Manager view can be shown quickly), Reset data
+(REQUIRED; restores everything). Works at phone width.
 Wrap localStorage reads in try/catch and reset on corrupt data.
 
 ## Assumptions (say these in the demo)
