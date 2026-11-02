@@ -27,6 +27,7 @@ interface Actions {
   nudgeIT: (waitingId: string) => void
   sendReminder: (hireId: string) => void
   jumpToStartDay: () => void
+  fastForwardPrimary: () => void
   jumpToNextPhase: () => void
   moveStartDate: (hireId: string, startDate: ISODate) => void
   dismissStartMoved: (hireId: string) => void
@@ -88,6 +89,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       nudgeIT: (waitingId) => d({ type: 'nudgeIT', waitingId }),
       sendReminder: (hireId) => d({ type: 'sendReminder', hireId }),
       jumpToStartDay: () => d({ type: 'jumpToStartDay' }),
+      fastForwardPrimary: () => {
+        clearAllDrafts()
+        d({ type: 'fastForwardPrimary' })
+      },
       jumpToNextPhase: () => d({ type: 'jumpToNextPhase' }),
       moveStartDate: (hireId, startDate) => d({ type: 'moveStartDate', hireId, startDate }),
       dismissStartMoved: (hireId) => d({ type: 'dismissStartMoved', hireId }),

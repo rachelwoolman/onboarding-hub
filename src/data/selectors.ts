@@ -323,15 +323,56 @@ export function pendingApprovals(state: AppState): AccessRequest[] {
 const ATTENTION_RANK: Record<HireStatus, number> = { blocked: 0, needsApproval: 1, notStarted: 2, onTrack: 3, done: 4 }
 
 /**
- * Mateo's garden, most attention first (blocked, waiting on him, not started, on track).
- * Ties go to whoever starts sooner.
+ * Mateo's new hires: Chloe (the demo's primary hire) always first, then the rest by
+ * attention (blocked, waiting on him, not started, on track), ties to whoever starts sooner.
  */
 export function gardenOrder(state: AppState): Hire[] {
   return [...state.hires].sort(
     (a, b) =>
+      Number(b.id === state.primaryHireId) - Number(a.id === state.primaryHireId) ||
       ATTENTION_RANK[hireStatus(state, a.id)] - ATTENTION_RANK[hireStatus(state, b.id)] ||
       a.startDate.localeCompare(b.startDate),
   )
+}
+
+/** The hire's most recent access request, if any. */
+export function latestRequest(state: AppState, hireId: string): AccessRequest | null {
+  const mine = state.requests.filter((r) => r.hireId === hireId)
+  return mine.length ? mine.reduce((a, b) => (b.updatedAt > a.updatedAt ? b : a)) : null
+}
+
+/**
+ * Plant on a manager's card. A request waiting on him shows a flower that hasn't opened;
+ * full bloom is reserved for an approved/ready request, or 100% with nothing pending.
+ */
+export function managerPlantStage(state: AppState, hireId: string): PlantStage {
+  const req = latestRequest(state, hireId)
+  if (req?.status === 'waitingOnManager') return 'flowering'
+  if (req && (req.status === 'approved' || req.status === 'ready')) return 'bloom'
+  return stageForPercent(progressPercent(state, hireId))
+}
+
+/**
+ * One quiet line of what she's finished and what's open. A request still waiting on the
+ * manager counts as open, not finished.
+ */
+export function finishedSummary(state: AppState, hireId: string): { done: string[]; open: string | null } {
+  const hire = getHire(state, hireId)
+  const pending = state.requests.find((r) => r.hireId === hireId && r.status === 'waitingOnManager')
+  const ctx = { day: hire ? weekday(hire.startDate) : '', manager: hire?.managerName ?? '' }
+  const fillCtx = (text: string) => text.replaceAll('{day}', ctx.day).replaceAll('{manager}', ctx.manager)
+  // Finished tasks read in the past ("Confirmed details"); the open one uses its short name.
+  const label = (t: Task) => fillCtx(t.doneAs ?? t.short)
+  const phase = getCurrentPhase(state, hireId) ?? 'preStart'
+  const tasks = phaseTasks(state, hireId, phase).sort((a, b) => a.order - b.order)
+  const done = tasks.filter((t) => isDone(t) && t.id !== pending?.taskId).map(label)
+  const open = pending
+    ? `${pending.resource} (needs your approval)`
+    : (() => {
+        const next = getFocusTask(state, hireId)
+        return next ? fillCtx(next.short) : null
+      })()
+  return { done, open }
 }
 
 /** "started 3 days ago", "starts in 2 days", "starts Monday". */
@@ -346,24 +387,29 @@ export function startLabel(hire: Hire, today: ISODate): string {
   return `starts in ${diff} days`
 }
 
-/** The one status line on a garden card. */
+/** The one status line on a new hire's card. */
 export function gardenStatusLine(state: AppState, hireId: string): string {
-  switch (hireStatus(state, hireId)) {
-    case 'blocked': {
-      const w = waitingFor(state, hireId).find((x) => x.blocked)!
-      return `Blocked: waiting on ${w.item.title}, ${w.daysWaiting} day${w.daysWaiting === 1 ? '' : 's'}.`
-    }
-    case 'needsApproval': {
-      const r = state.requests.find((x) => x.hireId === hireId && x.status === 'waitingOnManager')!
-      return `Waiting on your approval: ${r.resource.toLowerCase()}.`
-    }
-    case 'notStarted':
-      return 'Hasn’t started yet.'
-    case 'onTrack':
-      return 'On track.'
-    case 'done':
-      return 'Fully onboarded.'
+  const hire = getHire(state, hireId)
+  const when = hire ? startLabel(hire, state.today) : ''
+  const req = latestRequest(state, hireId)
+  if (req?.status === 'waitingOnManager') {
+    const task = state.tasks.find((t) => t.id === req.taskId)
+    const tools = Array.isArray(task?.data?.tools)
+      ? task.data.tools.map((v) => task.choices?.find((c) => c.value === v)?.label ?? v).join(', ')
+      : ''
+    return `Waiting on your approval: ${req.resource.toLowerCase()}${tools ? ` (${tools})` : ''}`
   }
+  if (req?.status === 'declined') return `${req.resource} sent back for a change`
+  if (req && (req.status === 'approved' || req.status === 'ready')) return `${req.resource} approved`
+  // Calm, factual lines: nothing here should read as something the manager must fix.
+  const When = when.charAt(0).toUpperCase() + when.slice(1)
+  const status = hireStatus(state, hireId)
+  if (status === 'done') return 'Fully onboarded'
+  if (status === 'notStarted') return `Hasn’t started yet · ${When}`
+  const phase = getCurrentPhase(state, hireId)
+  if (hire && phase && phase !== 'preStart' && dayOfOnboarding(hire, state.today) >= 0)
+    return `On track · Working through ${phaseTemplate(hire.role, phase).label}`
+  return `On track · ${When}`
 }
 
 // Coming up (all-set screen) --------------------------------------------------------

@@ -28,7 +28,6 @@ npm run lint     # Oxlint
 - **View as: New hire / Manager** (top right) switches between Chloe's page and Mateo's. Both
   share one store, so an approval on one side shows up on the other straight away.
 - **Jump to Monday** moves the demo clock to day 1. Pressing it again steps to later phases.
-- **Move start +1 day** shows what happens when a start date changes.
 - **Reset data** starts over. All data lives in your browser's localStorage, and the demo
   recovers on its own from corrupt saved data.
 
@@ -64,7 +63,7 @@ more to do.
 - Sensitive paperwork (I-9, W-4) is finished in a secure HR portal, never in this app. The
   portal is mocked.
 - Mateo approves access requests and IT provisions afterwards (simulated; IT has no screen).
-- All sample data is fake (555-01xx phone numbers, example.com emails).
+- All sample data is fake (names, 555-01xx phone numbers, emails).
 
 ## What I left out, and why
 

@@ -16,6 +16,7 @@ export type Action =
   | { type: 'nudgeIT'; waitingId: string; at?: string }
   | { type: 'sendReminder'; hireId: string; at?: string }
   | { type: 'jumpToStartDay' }
+  | { type: 'fastForwardPrimary'; at?: string }
   | { type: 'jumpToNextPhase' }
   | { type: 'moveStartDate'; hireId: string; startDate: ISODate }
   | { type: 'dismissStartMoved'; hireId: string }
@@ -185,6 +186,33 @@ export function reducer(state: AppState, action: Action): AppState {
           h.id === action.hireId ? { ...h, remindedAt: action.at ?? nowStamp() } : h,
         ),
       }
+    }
+
+    case 'fastForwardPrimary': {
+      // Demo shortcut: finish the primary hire's pre-start tasks the way she would,
+      // ending with the request to the manager, so the Manager view can be shown quickly.
+      const hire = getHire(state, state.primaryHireId)
+      if (!hire) return state
+      const at = action.at ?? nowStamp()
+      const open = state.tasks
+        .filter((t) => t.hireId === hire.id && t.phase === 'preStart' && !t.doneAt)
+        .sort((a, b) => a.order - b.order)
+      let next = state
+      for (const t of open) {
+        if (t.kind === 'steps' && t.steps) {
+          next = updateTask(next, t.id, (x) => ({ ...x, stepsDone: x.steps!.map((_, i) => i) }))
+        }
+        const data: TaskData | undefined =
+          t.key === 'confirm-details' && hire.onFile
+            ? { ...hire.onFile, preferredName: '' }
+            : t.kind === 'handoff'
+              ? { finishedAt: at }
+              : t.kind === 'request'
+                ? { tools: (t.choices ?? []).slice(0, 2).map((c) => c.value) }
+                : undefined
+        next = reducer(next, { type: 'completeTask', taskId: t.id, data, at })
+      }
+      return next
     }
 
     case 'jumpToStartDay': {

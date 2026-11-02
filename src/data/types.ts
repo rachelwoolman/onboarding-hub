@@ -5,7 +5,8 @@ export type Role = 'Engineering' | 'Design'
 
 export type PhaseId = 'preStart' | 'day1' | 'week1' | 'month1'
 
-export type PlantStage = 'seed' | 'sprout' | 'leafy' | 'bloom'
+/** seed → sprout → leafy → flowering (waiting on an approval) → bloom. */
+export type PlantStage = 'seed' | 'sprout' | 'leafy' | 'flowering' | 'bloom'
 
 export type Owner = 'IT' | 'manager'
 
@@ -68,6 +69,8 @@ export interface Task {
   title: string
   /** Short label for "Up next" chips. */
   short: string
+  /** How a finished task reads in a summary ("Confirmed details"); falls back to `short`. */
+  doneAs?: string
   why: string
   minutes: number
   /** Due date as days relative to start date (negative = before day 1). */

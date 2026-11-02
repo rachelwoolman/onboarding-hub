@@ -20,8 +20,8 @@ export function createSeed(realToday: ISODate = toISODate(new Date())): AppState
       role: 'Engineering',
       startDate: chloeStart,
       managerName: 'Mateo',
-      // Fake details "on file from HR" (555-01xx numbers and example.com are reserved for fiction).
-      onFile: { firstName: 'Chloe', lastName: 'Zhang', phone: '(555) 010-1234', email: 'chloe.zhang@example.com' },
+      // Fake details "on file from HR" (555-01xx numbers are reserved for fiction).
+      onFile: { firstName: 'Chloe', lastName: 'Zhang', phone: '(555) 010-1234', email: 'chloe.zhang@gmail.com' },
     },
     {
       id: 'priya',
@@ -31,7 +31,7 @@ export function createSeed(realToday: ISODate = toISODate(new Date())): AppState
       role: 'Engineering',
       startDate: addDays(today, -3),
       managerName: 'Mateo',
-      onFile: { firstName: 'Priya', lastName: 'Nair', phone: '(555) 010-2468', email: 'priya.nair@example.com' },
+      onFile: { firstName: 'Priya', lastName: 'Nair', phone: '(555) 010-2468', email: 'priya.nair@gmail.com' },
     },
     {
       id: 'jordan',
@@ -41,7 +41,7 @@ export function createSeed(realToday: ISODate = toISODate(new Date())): AppState
       role: 'Engineering',
       startDate: addDays(today, 2),
       managerName: 'Mateo',
-      onFile: { firstName: 'Jordan', lastName: 'Lee', phone: '(555) 010-1357', email: 'jordan.lee@example.com' },
+      onFile: { firstName: 'Jordan', lastName: 'Lee', phone: '(555) 010-1357', email: 'jordan.lee@gmail.com' },
     },
   ]
 
@@ -63,29 +63,14 @@ export function createSeed(realToday: ISODate = toISODate(new Date())): AppState
 
   // Chloe: nothing done yet; she opens the page fresh.
 
-  // Priya: all of pre-start and day 1 (10 of 18 = 56%), now blocked on GitHub access from IT.
+  // Priya: on track, started 3 days ago, working through week 1 (9 of 16 = 56%).
   const priyaDone = tasks
-    .filter((t) => t.hireId === 'priya' && (t.phase === 'preStart' || t.phase === 'day1'))
+    .filter((t) => t.hireId === 'priya' && ['preStart', 'day1'].includes(t.phase))
     .map((t) => t.key)
-  markDone('priya', priyaDone)
-  const priya = hires[1]
-  waiting.splice(
-    waiting.findIndex((w) => w.hireId === 'priya' && w.key === 'accounts'),
-    1,
-  )
-  waiting.push({
-    id: 'priya:wait:github',
-    hireId: 'priya',
-    key: 'github',
-    title: 'GitHub access',
-    owner: 'IT',
-    since: priya.startDate,
-    readyOn: addDays(priya.startDate, 1),
-    autoReady: false,
-    detail: 'IT is adding you to the BrightPath GitHub org.',
-  })
+  markDone('priya', [...priyaDone, 'local-dev'])
 
-  // Jordan: nothing yet.
+  // Jordan: on track, starts in 2 days. One of 4 pre-start tasks done (25%).
+  markDone('jordan', ['confirm-details'])
 
   return {
     version: 1,

@@ -56,8 +56,10 @@ organized and crafted than the mockups:
 ## Chloe's page (top to bottom, single centered column, max width ~720px)
 1. Header: "Hi Chloe 🌱" (soft serif name). Subline: "27 minutes and you're ready for Monday."
    (minutes = remaining time, updates as tasks complete). Illustrated plant top right with caption
-   "0 of 4 done". She starts at zero with a seed. Plant stages: seed (0%), sprout (>0%), leafy
-   (>=60%), bloom (100%).
+   "0 of 4 done". She starts at zero. Plant stages (always growing from a small sprout, never a
+   bare seed): seed = tiny sprout (0%), sprout = small plant (>0%), leafy (>=60%), flowering
+   (half-open flower, only while a request waits on the manager), bloom (100% with nothing
+   pending, or an approved request).
 2. Journey path: horizontal row of 3 stops joined by a plain line that fills green: "Your details ·
    2 min", "Paperwork · 15 min", "Connect with your team · 10 min". Current stop highlighted green,
    others muted. Names and times only. Completed stops show a check.
@@ -83,7 +85,7 @@ organized and crafted than the mockups:
 Nothing is pre-completed: she starts at zero.
 Your details (2 min): Confirm your name and contact details (2 min, unblocks IT, DO THIS FIRST,
   due today). Name, mobile phone and personal email are already on file from HR (fake:
-  Chloe Zhang, (555) 010-1234, chloe.zhang@example.com). Why-line: "So IT can create your
+  Chloe Zhang, (555) 010-1234, chloe.zhang@gmail.com). Why-line: "So IT can create your
   BrightPath email and accounts."
 Paperwork (15 min): Complete I-9 and W-4 (15 min, due Sunday, handed off to the HR portal).
 Connect with your team (10 min): Accept your Slack invite (5, Sunday, has 4 steps: 1. Open the
@@ -149,7 +151,7 @@ Finished phases disappear.
   - One "Coming up" card with tab chips Monday / Week 1 / First month (Monday selected). All
     read-only, no checkboxes or completing buttons. Monday is a ~200-word first-day note written
     like a warm HR email (intro; Arriving; Parking and your badge; What to wear; Who to ask;
-    signed "Sarah, People team") plus a mock "Add to calendar" (toast). Week 1 lists the
+    signed off "Best, Sarah") plus a mock "Add to calendar" (toast). Week 1 lists the
     template's week-1 tasks with time estimates; First month its month-1 tasks with "by day N".
     All of it comes from the role template and generated plan, so the Design role shows different
     content.
@@ -168,25 +170,32 @@ Chloe completes "Request your dev tools" -> a "Dev tools" AccessRequest is creat
 State is shared between both views via localStorage, so toggling "View as" shows it live.
 
 ## Mateo's page (one page, same style)
-1. Header: "Good morning, Mateo 🌱" (serif name). Subline: "1 thing needs you."
-2. "Needs you" strip (only when needed): slim amber-tinted banner, one item, one button.
-   "Chloe is waiting on your approval: dev tools" with Approve and a quiet Decline
-   link. If several, show the first plus a "+1 more" chip.
-3. "Your garden": one card per new hire with a plant matching status, name, role, start info,
-   tiny % number, one short status line, one "Check in" button. Most attention first.
-   - Priya Nair, Senior engineer, started 3 days ago, 50%, drooping sprout with amber dot,
-     "Blocked: waiting on GitHub access, 3 days."
-   - Jordan Lee, Product engineer, starts in 2 days, 0%, bare seed, "Hasn't started yet."
-   - Chloe Zhang, Software engineer, starts Monday, 0%, bare seed, "Hasn't started yet." until
-     she finishes her first task, then a healthy sprout and "On track." (data-driven, so the live
-     demo shows her plant sprout on Mateo's page).
-4. "Check in" expands the card IN PLACE: one plain line, ONE action fitted to the situation (Nudge
-   IT for blocked, Send a reminder for not started, Approve for approval, none for on track), and a
-   collapsed "See all tasks" with owner, status, due (blocked item in amber).
-5. States: after Nudge IT the button becomes "Nudged IT just now ✓" plus toast; after Approve the
-   strip disappears with toast "Approved. Chloe has been notified."; nothing needs him ->
-   "Nothing needs you right now 🌱"; a finished hire blooms then fades from the garden; empty
-   garden "No new hires right now."
+In the demo, Chloe is the only person who can need Mateo. Everyone else is calm.
+1. Header: "Good morning, Mateo 🌱" (serif name). Subline: "1 thing needs you." while something
+   is pending, otherwise "3 new hires onboarding."
+2. "Needs you" strip ONLY while a request is pending: slim amber banner ("Chloe is waiting on
+   your approval: dev tools") with Approve and a quiet Decline link. Decline asks inline for a
+   short reason, which is required. "+N more" chip if several. When nothing is pending, a small,
+   unobtrusive "Nothing needs you right now 🌱".
+3. "New hires" (small, sentence case): one card per hire with a plant, name, role, start info,
+   a small % number and one status line. Chloe is always first. No "Check in" button.
+   - Chloe uses her REAL store state. Before she sends anything: calm card, real %, seed or sprout
+     plant, "Hasn't started yet · Starts Monday" or "On track · Starts Monday". While her dev tools
+     request is pending: amber-tinted card, flowering plant (half-open flower), "Waiting on your
+     approval: dev tools (GitHub, Jira)", one quiet line "Done: Confirmed details, I-9 and W-4,
+     Slack · Open: Dev tools (needs your approval)", and Approve plus Decline on the card. After
+     Approve: full bloom, "Dev tools approved", and her tracker goes Approved, then Ready.
+   - Priya Nair, Senior engineer, started 3 days ago, 56%, small plant, "On track · Working through
+     Week 1". No blocker of any kind.
+   - Jordan Lee, Product engineer, 25% (1 of 4 pre-start tasks), small sprout, "On track · Starts
+     in 2 days".
+   - Only Chloe's card may ever show amber or an action. Priya and Jordan are slightly muted, with
+     no amber, no "blocked"/"hasn't started"/"overdue" wording, and nothing for Mateo to do.
+4. Every card has a quiet "Tasks" toggle (collapsed on load and after Reset): every task with
+   owner, status and due (on Chloe's card only, an item waiting on Mateo or overdue shows in amber).
+5. States: after Approve the strip disappears with toast "Approved. Chloe has been notified.";
+   after Decline, toast "Sent back to Chloe with your note." and Chloe sees the note with "Fix and
+   resubmit"; empty list "No new hires right now."
 Visual note: Mateo's mockup is a first pass. Make it simpler and softer than the white-card grid:
 less boxy, more open, same typography and palette as Chloe's page.
 
@@ -194,7 +203,9 @@ less boxy, more open, same typography and palette as Chloe's page.
 Vite + React + TypeScript + Tailwind v4. No backend. Persist to localStorage. React context for
 state. generatePlan(role, startDate) with Engineering (full) and Design (smaller, different tasks)
 templates, to prove role-based plans. Plants: hand-built inline SVGs, no image assets.
-Tiny "Demo controls" footer: Jump to Monday, Reset data (REQUIRED). Works at phone width.
+Tiny "Demo controls" footer: Jump to Monday, Fast-forward Chloe (finishes her pre-start tasks and
+sends the dev tools request in one click, so the Manager view can be shown quickly), Reset data
+(REQUIRED; restores everything). Works at phone width.
 Wrap localStorage reads in try/catch and reset on corrupt data.
 
 ## Assumptions (say these in the demo)

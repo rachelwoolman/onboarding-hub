@@ -1,4 +1,4 @@
-import { addDays, daysBetween, weekday } from '../data/dates'
+import { daysBetween, weekday } from '../data/dates'
 import { getHire, getNextLockedPhase } from '../data/selectors'
 import { useStore } from '../state/store'
 
@@ -11,6 +11,8 @@ export function DemoControls() {
   const day = daysBetween(hire.startDate, state.today)
   const next = getNextLockedPhase(state, hire.id)
   const beforeStart = day < 0
+  // Finishes her pre-start tasks and sends the request, so the Manager view can be shown fast.
+  const canFastForward = state.tasks.some((t) => t.hireId === hire.id && t.phase === 'preStart' && !t.doneAt)
 
   let jumpLabel: string | null
   if (beforeStart) jumpLabel = `Jump to ${weekday(hire.startDate)}`
@@ -38,13 +40,11 @@ export function DemoControls() {
             {jumpLabel}
           </button>
         )}
-        <button
-          type="button"
-          className={btn}
-          onClick={() => actions.moveStartDate(hire.id, addDays(hire.startDate, 1))}
-        >
-          Move start +1 day
-        </button>
+        {canFastForward && (
+          <button type="button" className={btn} onClick={actions.fastForwardPrimary}>
+            Fast-forward {hire.firstName}
+          </button>
+        )}
         <button type="button" className={btn} onClick={actions.resetData}>
           Reset data
         </button>

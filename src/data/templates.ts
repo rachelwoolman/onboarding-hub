@@ -12,6 +12,7 @@ export interface TaskTemplate {
   portal?: PortalHandoff
   title: string
   short: string
+  doneAs?: string
   why: string
   minutes: number
   dueOffset: number
@@ -33,6 +34,8 @@ export interface FirstDayGuide {
   intro: string
   sections: { title: string; body: string }[]
   signoff: string
+  /** A short email-style closing, e.g. "Best," */
+  closing: string
   from: string
 }
 
@@ -69,6 +72,7 @@ const confirmDetails: TaskTemplate = {
   kind: 'form',
   title: 'Confirm your name and contact details',
   short: 'Your details',
+  doneAs: 'Confirmed details',
   why: 'So IT can create your BrightPath email and accounts.',
   minutes: 2,
   dueOffset: -3,
@@ -102,6 +106,7 @@ function slackInvite(teamChannel: string): TaskTemplate {
     kind: 'steps',
     title: 'Accept your Slack invite',
     short: 'Slack invite',
+    doneAs: 'Slack',
     why: 'Your team says hi here first.',
     minutes: 5,
     dueOffset: -1,
@@ -204,7 +209,8 @@ function firstDayGuide(buddy: string, buddyPlan: string): FirstDayGuide {
       },
     ],
     signoff: 'We’re so glad you’re joining us. See you {day}!',
-    from: 'Sarah, People team',
+    closing: 'Best,',
+    from: 'Sarah',
   }
 }
 
